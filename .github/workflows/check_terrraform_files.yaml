@@ -1,0 +1,46 @@
+name: check_tf_files
+
+on:
+  workflow_call:
+    inputs:
+      tf_fmt:
+        required: false
+        default: false
+        type: boolean
+      checkov:
+        required: false
+        default: false
+        type: boolean
+      tfsec:
+        required: false
+        default: false
+        type: boolean
+  
+jobs:
+    check_files:
+      runs-on: ubuntu-latest
+      name: Do checks on the terraform files
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v2
+          with:
+           fetch-depth: 0
+        
+        - name: Check terraform format
+          if: ${{ inputs.tf_fmt == 'true'}}
+          uses: dflook/terraform-fmt@v1
+          with:
+           path: .
+        
+        - name: Do checkov check on files
+          if: ${{ inputs.checkov == 'true'}}
+          uses: bridgecrewio/checkov-action@master
+          with:
+            framework: terraform
+            quiet: true
+        
+        - name: Do TFSec check on files
+          if: ${{ inputs.tfsec == 'true'}}
+          uses: triat/terraform-security-scan@v3
+
+      

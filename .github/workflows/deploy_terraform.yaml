@@ -1,0 +1,64 @@
+name: deploy_terraform
+
+on:
+  workflow_call:
+    inputs:
+      ENVIRONMENT:
+        required: true
+        type: string
+      AWS_REGION:
+        required: false
+        default: "us-east-1"
+        type: string
+
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true   
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_wrapper: false
+          terraform_version: 1.1.9
+      
+      - name: Set environment var
+        run: export TF_VAR_environment=${{ inputs.ENVIRONMENT }}
+
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "${{ inputs.AWS_REGION }}"
+
+      - name: Init terraform backend
+        run: terraform init
+        working-directory: ${{ github.workspace }}/${{inputs.ENVIRONMENT}}/
+
+      - name: Terraform Plan
+        run: terraform plan 
+        working-directory: ${{ github.workspace }}/${{inputs.ENVIRONMENT}}/
+
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: ${{ github.workspace }}/${{inputs.ENVIRONMENT}}/
