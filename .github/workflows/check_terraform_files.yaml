@@ -30,6 +30,7 @@ jobs:
               core.setFailed('This reusable workflow can only be used by Trafilea.')
 
     check_files:
+      needs: check_org
       runs-on: ubuntu-latest
       name: Do checks on the terraform files
       steps:
