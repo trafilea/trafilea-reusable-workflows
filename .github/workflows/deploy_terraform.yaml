@@ -52,11 +52,9 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Configure Github Credentials
-        uses: philips-labs/terraform-private-modules-action@v1
-        with:
-          org: trafilea
-          token: ${{ secrets.GH_WORKFLOW_TOKEN }} 
+      - run: |
+          git config --local --remove-section http."https://github.com/"
+          git config --global url."https://foo:${{ secrets.GH_WORKFLOW_TOKEN }}@github.com/trafilea".insteadOf "https://github.com/trafilea"
 
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v1
