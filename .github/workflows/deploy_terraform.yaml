@@ -20,13 +20,27 @@ on:
         required: true
 
 jobs:
+  check_org:
+    name: Check calling organization
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check the calling organization
+        if: ${{ github.repository_owner != 'trafilea' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('This reusable workflow can only be used by Trafilea.')
+
+
   deploy:
+    needs: check_org
     name: deploy
     runs-on: ubuntu-latest
 
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
 
     steps:

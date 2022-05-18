@@ -17,6 +17,18 @@ on:
         type: boolean
   
 jobs:
+    check_org:
+      name: Check calling organization
+      runs-on: ubuntu-latest
+
+      steps:
+        - name: Check the calling organization
+          if: ${{ github.repository_owner != 'trafilea' }}
+          uses: actions/github-script@v3
+          with:
+            script: |
+              core.setFailed('This reusable workflow can only be used by Trafilea.')
+
     check_files:
       runs-on: ubuntu-latest
       name: Do checks on the terraform files
