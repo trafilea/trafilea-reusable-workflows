@@ -1,0 +1,89 @@
+name: Build and push a Docker image to ECR
+
+on:
+  workflow_call:
+    inputs:
+      ENVIRONMENT:
+        required: true
+        type: string
+      LATEST_TAG:
+        required: true
+        type: string
+      IMAGE_TAG:
+        required: true
+        type: string
+      ECR_REPOSITORY:
+        required: true
+        type: string
+      AWS_REGION:
+        required: false
+        type: string
+        default: "us-east-1"
+
+
+    secrets:
+      OPS_AWS_ACCESS_KEY_ID:
+        required: true
+      OPS_AWS_SECRET_ACCESS_KEY:
+        required: true
+      GH_WORKFLOW_TOKEN:
+        required: true
+
+
+jobs:
+  check_org:
+    name: Check calling organization
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check the calling organization
+        if: ${{ github.repository_owner != 'trafilea' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('This reusable workflow can only be used by Trafilea.')
+
+  build_n_push:
+    name: Build and push Docker image to ECR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup
+
+
+
+
+      - name: Configure AWS Credentials
+        id: configure-credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-container-registry
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build Container Image
+        id: build-container-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-container-registry.outputs.registry }}
+        run: |
+          docker build . \
+            --progress plain \
+            --file Dockerfile \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker tag \
+            $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            $ECR_REGISTRY/$ECR_REPOSITORY:$LATEST_TAG
+      - name: Push Container Image to Container Registry
+        id: push-container-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-container-registry.outputs.registry }}
+        run: |
+          # Push Docker Image to ECR
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY --all-tags
+          # Set Steps Output for a Pushed Image
+          echo "TF_VAR_docker_image_tag=$IMAGE_TAG" >> $GITHUB_ENV
+          echo "TF_VAR_db_password=$SECRET_DB_PASSWORD" >> $GITHUB_ENV
