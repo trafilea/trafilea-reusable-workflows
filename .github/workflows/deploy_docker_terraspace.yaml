@@ -1,0 +1,113 @@
+name: Deploy using Terragrunt
+
+on:
+  workflow_call:
+    inputs:
+      ENVIRONMENT:
+        required: true
+        type: string
+      AWS_REGION:
+        required: false
+        default: "us-east-1"
+        type: string
+      PATH:
+        required: true
+        type: string
+      RUBY_VERSION:
+        required: true
+        type: string
+
+    secrets:
+      OPS_AWS_ACCESS_KEY_ID:
+        required: true
+      OPS_AWS_SECRET_ACCESS_KEY:
+        required: true
+      AWS_ACCOUNT_ID:
+        required: true
+      GH_WORKFLOW_TOKEN:
+        required: true
+
+jobs:
+  check_org:
+    name: Check calling organization
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check the calling organization
+        if: ${{ github.repository_owner != 'trafilea' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('This reusable workflow can only be used by Trafilea.')
+
+  deploy:
+    needs: check_org
+    name: deploy
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - run: |
+          git config --local --remove-section http."https://github.com/"
+          git config --global url."https://foo:${{ secrets.GH_WORKFLOW_TOKEN }}@github.com/trafilea".insteadOf "https://github.com/trafilea"
+
+      - name: Setup Environment Varaibles
+        id: setup-environment
+        run: |
+          echo "TS_ENV= ${{ inputs.ENVIRONMENT }}" >> $GITHUB_ENV
+          echo "AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}" >> $GITHUB_ENV
+          echo "TF_VAR_docker_image_tag=${{ inputs.DOCKER_IMAGE_TAG }}" >> $GITHUB_ENV
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_wrapper: false
+          terraform_version: 1.1.9
+
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY  }}
+          aws-region: "${{ inputs.AWS_REGION }}"
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/terraform-admin-role
+          role-session-name: TerraSpaceDeploySession
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ inputs.RUBY_VERSION }}
+
+      - name: Install gems (terraspace, rspec-terraspace and terraspace_plugin_aws)
+        run: bundle install
+        working-directory: ./terraform
+
+      - name: Terraspace Bundle install
+        run: terraspace bundle
+        working-directory: ./terraform
+
+      - name: Terraspace Init
+        working-directory: ./terraform
+        run: |
+          terraspace all init
+
+      - name: Terraspace All Up
+        working-directory: ./terraform
+        run: |
+          terraspace all up -y
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: up-logs
+          path: ./terraform/log/*
