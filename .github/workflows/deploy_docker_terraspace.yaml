@@ -16,6 +16,9 @@ on:
       RUBY_VERSION:
         required: true
         type: string
+      DOCKER_IMAGE_TAG:
+        required: true
+        type: string
 
     secrets:
       OPS_AWS_ACCESS_KEY_ID:
