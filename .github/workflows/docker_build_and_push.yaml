@@ -4,8 +4,9 @@ on:
   workflow_call:
     inputs:
       ENVIRONMENT:
-        required: true
+        required: false
         type: string
+        default: "dev"
       APP_NAME:
         required: true
         type: string
@@ -13,9 +14,6 @@ on:
         required: true
         type: string
       IMAGE_TAG:
-        required: true
-        type: string
-      ECR_REPOSITORY:
         required: true
         type: string
       AWS_REGION:
@@ -28,8 +26,6 @@ on:
       OPS_AWS_ACCESS_KEY_ID:
         required: true
       OPS_AWS_SECRET_ACCESS_KEY:
-        required: true
-      GH_WORKFLOW_TOKEN:
         required: true
 
 
@@ -48,6 +44,7 @@ jobs:
 
 
   build_n_push:
+    needs: check_org
     name: Build and push Docker image to ECR
     runs-on: ubuntu-latest
 
@@ -78,8 +75,8 @@ jobs:
           docker build . \
             --progress plain \
             --file Dockerfile \
-            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.IMAGE_TAG }}
           docker tag \
-            $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-            $ECR_REGISTRY/$ECR_REPOSITORY:$LATEST_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$LATEST_TAG
+            $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.IMAGE_TAG }} \
+            $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.LATEST_TAG }}
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.LATEST_TAG }}
