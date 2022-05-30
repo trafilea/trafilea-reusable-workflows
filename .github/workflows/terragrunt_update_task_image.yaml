@@ -51,6 +51,7 @@ jobs:
       AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
       TF_VAR_datadog_api_key: ${{ secrets.TE_DD_API_KEY }}
       TF_VAR_docker_image_tag: ${{ inputs.DOCKER_IMAGE_TAG }}
+      ENV: ${{ inputs.ENVIRONMENT }}
 
     steps:
       - name: Checkout code
@@ -71,7 +72,7 @@ jobs:
       - name: Install Terragrunt
         uses: peter-murray/terragrunt-github-action@v1.0.0
         with:
-          terragrunt_version: 0.32.3
+          terragrunt_version: 0.37.1
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -82,8 +83,8 @@ jobs:
 
       - name: Terragrunt Plan
         run: terragrunt run-all plan --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color --terragrunt-strict-include ecs/
-        working-directory: ${{ github.workspace }}/main/terraform/environments/${{ inputs.PATH }}/
+        working-directory: ${{ github.workspace }}/terraform/environments/${{ inputs.PATH }}/
 
       - name: Terragrunt Apply
         run: terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color --terragrunt-strict-include ecs/
-        working-directory: ${{ github.workspace }}/main/terraform/environments/${{ inputs.PATH }}/
+        working-directory: ${{ github.workspace }}/terraform/environment/${{ inputs.PATH }}/
