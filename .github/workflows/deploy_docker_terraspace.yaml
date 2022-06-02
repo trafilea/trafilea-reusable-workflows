@@ -10,9 +10,6 @@ on:
         required: false
         default: "us-east-1"
         type: string
-      PATH:
-        required: true
-        type: string
       RUBY_VERSION:
         required: true
         type: string
