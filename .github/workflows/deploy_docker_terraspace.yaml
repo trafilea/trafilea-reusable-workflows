@@ -1,4 +1,4 @@
-name: Deploy using Terragrunt
+name: Deploy using Terraspace
 
 on:
   workflow_call:
