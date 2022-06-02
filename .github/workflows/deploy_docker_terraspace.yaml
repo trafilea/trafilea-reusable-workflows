@@ -16,6 +16,9 @@ on:
       DOCKER_IMAGE_TAG:
         required: true
         type: string
+      APP_NAME:
+        required: false
+        type: string
 
     secrets:
       OPS_AWS_ACCESS_KEY_ID:
@@ -26,6 +29,8 @@ on:
         required: true
       GH_WORKFLOW_TOKEN:
         required: true
+      TE_DD_API_KEY:
+        required: false
 
 jobs:
   check_org:
@@ -66,6 +71,8 @@ jobs:
           echo "TS_ENV= ${{ inputs.ENVIRONMENT }}" >> $GITHUB_ENV
           echo "AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}" >> $GITHUB_ENV
           echo "TF_VAR_docker_image_tag=${{ inputs.DOCKER_IMAGE_TAG }}" >> $GITHUB_ENV
+          echo "TF_VAR_datadog_api_key=${{ secrets.TE_DD_API_KEY }}"
+          echo "APP_NAME=${{ inputs.APP_NAME }}" >> $GITHUB_ENV
 
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v1
