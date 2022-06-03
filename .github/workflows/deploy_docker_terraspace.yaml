@@ -68,7 +68,7 @@ jobs:
       - name: Setup Environment Varaibles
         id: setup-environment
         run: |
-          echo "TS_ENV= ${{ inputs.ENVIRONMENT }}" >> $GITHUB_ENV
+          echo "TS_ENV=${{ inputs.ENVIRONMENT }}" >> $GITHUB_ENV
           echo "AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}" >> $GITHUB_ENV
           echo "TF_VAR_docker_image_tag=${{ inputs.DOCKER_IMAGE_TAG }}" >> $GITHUB_ENV
           echo "TF_VAR_datadog_api_key=${{ secrets.TE_DD_API_KEY }}"
