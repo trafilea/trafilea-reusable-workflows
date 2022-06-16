@@ -118,6 +118,7 @@ jobs:
           terraspace all up -y
 
       - name: Upload Artifacts
+        if: always()
         uses: actions/upload-artifact@v2
         with:
           name: up-logs
