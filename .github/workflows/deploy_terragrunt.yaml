@@ -26,6 +26,8 @@ on:
         required: true
       TE_DD_API_KEY:
         required: false
+      SF_STRIPE_SECRET_KEY:
+        required: false
 
 jobs:
   check_org:
@@ -51,6 +53,7 @@ jobs:
       AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
       TF_VAR_datadog_api_key: ${{ secrets.TE_DD_API_KEY }}
       TF_VAR_docker_image_tag: ${{ inputs.DOCKER_IMAGE_TAG }}
+      TF_VAR_STRIPE_SECRET_KEY: ${{ secrets.SF_STRIPE_SECRET_KEY }}
       ENV: ${{ inputs.ENVIRONMENT }}
 
     steps:
