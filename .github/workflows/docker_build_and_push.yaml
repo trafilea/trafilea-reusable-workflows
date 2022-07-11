@@ -27,6 +27,8 @@ on:
         required: true
       OPS_AWS_SECRET_ACCESS_KEY:
         required: true
+      GH_WORKFLOW_TOKEN:
+        required: true
 
 
 jobs:
@@ -52,7 +54,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
+          submodules: true
           fetch-depth: 0
+          token: ${{ secrets.GH_WORKFLOW_TOKEN }}
 
       - name: Configure AWS Credentials
         id: configure-credentials
