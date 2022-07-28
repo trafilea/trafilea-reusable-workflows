@@ -27,6 +27,9 @@ on:
       GH_WORKFLOW_TOKEN:
         required: true
 
+    env:
+      BUILD_CACHE: /home/runner/.docker/buildkit
+
 
 jobs:
   check_org:
@@ -85,7 +88,7 @@ jobs:
 
       - uses: actions/cache@v1
         with:
-          path: /home/runner/.docker/buildkit
+          path: ${{ env.BUILD_CACHE }}
           key: ${{ hashFiles('Dockerfile') }}
 
       - name: Install the latest buildkit release
