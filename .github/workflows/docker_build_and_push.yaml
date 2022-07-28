@@ -27,9 +27,6 @@ on:
       GH_WORKFLOW_TOKEN:
         required: true
 
-    env:
-      BUILD_CACHE: /home/runner/.docker/buildkit
-
 
 jobs:
   check_org:
@@ -46,6 +43,8 @@ jobs:
 
 
   build_n_push:
+    env:
+      BUILD_CACHE: /home/runner/.docker/buildkit
     needs: check_org
     name: Build and Push to ECR
     runs-on: ubuntu-latest
