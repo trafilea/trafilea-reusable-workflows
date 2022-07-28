@@ -3,17 +3,7 @@ name: Build and push a Docker image to ECR
 on:
   workflow_call:
     inputs:
-      ENVIRONMENT:
-        required: false
-        type: string
-        default: "dev"
       APP_NAME:
-        required: true
-        type: string
-      LATEST_TAG:
-        required: true
-        type: string
-      IMAGE_TAG:
         required: true
         type: string
       AWS_REGION:
@@ -33,12 +23,12 @@ on:
 
 jobs:
   check_org:
-    name: Check calling organization
+    name: Check Caller
     runs-on: ubuntu-latest
 
     steps:
       - name: Check the calling organization
-        if: ${{ github.repository_owner != 'trafilea' }}
+        if: ${{ github.repository_owner != 'jw-tera' }}
         uses: actions/github-script@v3
         with:
           script: |
@@ -47,7 +37,7 @@ jobs:
 
   build_n_push:
     needs: check_org
-    name: Build and push Docker image to ECR
+    name: Build and Push to ECR
     runs-on: ubuntu-latest
 
     steps:
@@ -57,6 +47,16 @@ jobs:
           submodules: true
           fetch-depth: 0
           token: ${{ secrets.GH_WORKFLOW_TOKEN }}
+
+      - name: Set Image tag
+        id: set-image-tag
+        run: |
+          echo "::set-output name=image_tag::$(echo ${{ github.sha }} | cut -c1-12)"
+
+      - name: Set LATEST tag
+        id: set-latest-tag
+        run: |
+          if [ ${{ github.ref }}  == 'refs/heads/develop' ]; then echo "::set-output name=latest_tag::latest"; else echo "::set-output name=latest_tag::latest-staging"; fi
 
       - name: Configure AWS Credentials
         id: configure-credentials
