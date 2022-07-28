@@ -3,17 +3,7 @@ name: Build and push a Docker image to ECR
 on:
   workflow_call:
     inputs:
-      ENVIRONMENT:
-        required: false
-        type: string
-        default: "dev"
       APP_NAME:
-        required: true
-        type: string
-      LATEST_TAG:
-        required: true
-        type: string
-      IMAGE_TAG:
         required: true
         type: string
       AWS_REGION:
@@ -21,6 +11,13 @@ on:
         type: string
         default: "us-east-1"
 
+    outputs:
+      image_tag:
+        description: Image tag created on the workflow
+        value: ${{ jobs.build_n_push.outputs.image_tag }}
+      latest_tag:
+        description: Latest tag created on the workflow
+        value: ${{ jobs.build_n_push.outputs.latest_tag }}
 
     secrets:
       OPS_AWS_ACCESS_KEY_ID:
@@ -33,7 +30,7 @@ on:
 
 jobs:
   check_org:
-    name: Check calling organization
+    name: Check Caller
     runs-on: ubuntu-latest
 
     steps:
@@ -47,8 +44,12 @@ jobs:
 
   build_n_push:
     needs: check_org
-    name: Build and push Docker image to ECR
+    name: Build and Push to ECR
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.set-image-tag.outputs.image_tag }}
+      latest_tag: ${{ steps.set-latest-tag.outputs.latest_tag }}
+
 
     steps:
       - name: Checkout code
@@ -57,6 +58,18 @@ jobs:
           submodules: true
           fetch-depth: 0
           token: ${{ secrets.GH_WORKFLOW_TOKEN }}
+
+      - name: Set Image tag
+        id: set-image-tag
+        shell: bash
+        run: |
+          echo "::set-output name=image_tag::$(echo ${{ github.sha }} | cut -c1-12)"
+
+      - name: Set LATEST tag
+        id: set-latest-tag
+        shell: bash
+        run: |
+          if [ ${{ github.ref }}  == 'refs/heads/develop' ]; then echo "::set-output name=latest_tag::latest"; else echo "::set-output name=latest_tag::latest-staging"; fi
 
       - name: Configure AWS Credentials
         id: configure-credentials
@@ -79,9 +92,9 @@ jobs:
           docker build . \
             --progress plain \
             --file Dockerfile \
-            --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.IMAGE_TAG }}
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
           docker tag \
-            $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.IMAGE_TAG }} \
-            $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.LATEST_TAG }}
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.IMAGE_TAG }}
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.LATEST_TAG }}
+            $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }} \
+            $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
