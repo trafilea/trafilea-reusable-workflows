@@ -11,6 +11,9 @@ on:
         type: string
         default: "us-east-1"
 
+    outputs:
+      image_tag: ${{ jobs.build_n_push.outputs.image_tag }}
+      latest_tag: ${{ jobs.build_n_push.outputs.latest_tag }}
 
     secrets:
       OPS_AWS_ACCESS_KEY_ID:
@@ -39,6 +42,10 @@ jobs:
     needs: check_org
     name: Build and Push to ECR
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.set-image-tag.outputs.image_tag }}
+      latest_tag: ${{ steps.set-latest-tag.outputs.latest_tag }}
+
 
     steps:
       - name: Checkout code
