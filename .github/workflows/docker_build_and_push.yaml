@@ -43,8 +43,6 @@ jobs:
 
 
   build_n_push:
-    env:
-      BUILD_CACHE: /home/runner/.docker/buildkit
     needs: check_org
     name: Build and Push to ECR
     runs-on: ubuntu-latest
@@ -85,52 +83,16 @@ jobs:
         id: login-container-registry
         uses: aws-actions/amazon-ecr-login@v1
 
-      - uses: actions/cache@v1
-        with:
-          path: ${{ env.BUILD_CACHE }}
-          key: ${{ hashFiles('Dockerfile') }}
-
-      - name: Install the latest buildkit release
-        run: |
-          BUILDKIT_URL="$(curl -sL https://api.github.com/repos/moby/buildkit/releases \
-            | jq -r 'map(select(.name|startswith("v")))|sort_by(.name)[-1].assets[]|select(.name|endswith(".linux-amd64.tar.gz")).browser_download_url')"
-          curl -L "${BUILDKIT_URL}" | sudo tar -xz -C /usr/local
-
-      - name: Start buildkit daemon
-        run: |
-          sudo --non-interactive --shell <<END_SUDO
-            install -d -m 0750 -o root -g docker /run/buildkit
-            buildkitd &
-            while ! test -S /run/buildkit/buildkitd.sock; do sleep 0.1; done
-            chgrp docker /run/buildkit/buildkitd.sock
-          END_SUDO
-
-      - name: Build Docker image
-        env:
-          IMAGE_NAME: ${{ steps.login-container-registry.outputs.registry }}/${{ inputs.APP_NAME }}
-          IMAGE_TAG: ${{ steps.set-image-tag.outputs.image_tag }}
-        shell: bash
-        run: |
-          buildctl build \
-            --frontend=dockerfile.v0 --local dockerfile=. --local context=. \
-            --export-cache type=local,dest=${BUILD_CACHE},mode=max \
-            --import-cache type=local,src=${BUILD_CACHE} \
-            --output type=docker,name=${IMAGE_NAME} | docker load
-          echo "Cache size: $(du -sh ${BUILD_CACHE})"
-
-      - name: DEBUG - Output image name
-        run: |
-          docker image ls
-
-      - name: Tag and Push Container Image
+      - name: Build and Push Container Image
         id: build-container-image
         env:
           ECR_REGISTRY: ${{ steps.login-container-registry.outputs.registry }}
           ECR_REPOSITORY: ${{ inputs.APP_NAME }}
         run: |
-          docker tag \
-            $ECR_REGISTRY/$ECR_REPOSITORY:latest \
-            $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
+          docker build . \
+            --progress plain \
+            --file Dockerfile \${{ steps.tests.outputs.stdout }}
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
           docker tag \
             $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }} \
             $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
