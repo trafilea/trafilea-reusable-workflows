@@ -106,12 +106,16 @@ jobs:
           END_SUDO
 
       - name: Build Docker image
+        env:
+          IMAGE_NAME: ${{ steps.login-container-registry.outputs.registry }}/${{ inputs.APP_NAME }}
+          IMAGE_TAG: ${{ steps.set-image-tag.outputs.image_tag }}
+        shell: bash
         run: |
           buildctl build \
             --frontend=dockerfile.v0 --local dockerfile=. --local context=. \
-            --export-cache type=local,dest=${BUILD_CACHE},mode=max \
+            --export-cache type=local,dest=${BUILD_CACHE},mode=max,tag=${IMAGE_TAG} \
             --import-cache type=local,src=${BUILD_CACHE} \
-            --output type=docker,name=build_image | docker load
+            --output type=docker,name=${IMAGE_NAME} | docker load
           echo "Cache size: $(du -sh ${BUILD_CACHE})"
 
       - name: DEBUG - Output image name
@@ -125,10 +129,7 @@ jobs:
           ECR_REPOSITORY: ${{ inputs.APP_NAME }}
         run: |
           docker tag \
-            build_image:latest \
-            $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
-          docker tag \
-            build_image:latest
+            $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }} \
             $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
