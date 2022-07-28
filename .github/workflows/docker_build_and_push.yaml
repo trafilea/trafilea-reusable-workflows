@@ -12,8 +12,12 @@ on:
         default: "us-east-1"
 
     outputs:
-      image_tag: ${{ jobs.build_n_push.outputs.image_tag }}
-      latest_tag: ${{ jobs.build_n_push.outputs.latest_tag }}
+      image_tag:
+        description: Image tag created on the workflow
+        value: ${{ jobs.build_n_push.outputs.image_tag }}
+      latest_tag:
+        description: Latest tag created on the workflow
+        value: ${{ jobs.build_n_push.outputs.latest_tag }}
 
     secrets:
       OPS_AWS_ACCESS_KEY_ID:
