@@ -111,8 +111,12 @@ jobs:
             --frontend=dockerfile.v0 --local dockerfile=. --local context=. \
             --export-cache type=local,dest=${BUILD_CACHE},mode=max \
             --import-cache type=local,src=${BUILD_CACHE} \
-            --output type=docker,name=$ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }} | docker load
+            --output type=docker,name=build_image | docker load
           echo "Cache size: $(du -sh ${BUILD_CACHE})"
+
+      - name: DEBUG - Output image name
+        run: |
+          docker image ls
 
       - name: Tag and Push Container Image
         id: build-container-image
