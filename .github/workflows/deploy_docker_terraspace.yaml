@@ -31,8 +31,7 @@ on:
         required: true
       TE_DD_API_KEY:
         required: false
-      SF_STRIPE_SECRET_KEY:
-        required: false
+
 
 jobs:
   check_org:
@@ -75,7 +74,6 @@ jobs:
           echo "TF_VAR_docker_image_tag=${{ inputs.DOCKER_IMAGE_TAG }}" >> $GITHUB_ENV
           echo "TF_VAR_datadog_api_key=${{ secrets.TE_DD_API_KEY }}" >> $GITHUB_ENV
           echo "APP_NAME=${{ inputs.APP_NAME }}" >> $GITHUB_ENV
-          echo "TF_VAR_STRIPE_SECRET_KEY=${{ secrets.SF_STRIPE_SECRET_KEY }}" >> $GITHUB_ENV
 
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v1
