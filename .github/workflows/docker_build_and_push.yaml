@@ -50,11 +50,13 @@ jobs:
 
       - name: Set Image tag
         id: set-image-tag
+        shell: bash
         run: |
           echo "::set-output name=image_tag::$(echo ${{ github.sha }} | cut -c1-12)"
 
       - name: Set LATEST tag
         id: set-latest-tag
+        shell: bash
         run: |
           if [ ${{ github.ref }}  == 'refs/heads/develop' ]; then echo "::set-output name=latest_tag::latest"; else echo "::set-output name=latest_tag::latest-staging"; fi
 
@@ -78,10 +80,10 @@ jobs:
         run: |
           docker build . \
             --progress plain \
-            --file Dockerfile \
-            --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.IMAGE_TAG }}
+            --file Dockerfile \${{ steps.tests.outputs.stdout }}
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
           docker tag \
-            $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.IMAGE_TAG }} \
-            $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.LATEST_TAG }}
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.IMAGE_TAG }}
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.LATEST_TAG }}
+            $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }} \
+            $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
