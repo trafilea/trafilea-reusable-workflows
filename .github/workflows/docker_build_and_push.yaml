@@ -113,7 +113,7 @@ jobs:
         run: |
           buildctl build \
             --frontend=dockerfile.v0 --local dockerfile=. --local context=. \
-            --export-cache type=local,dest=${BUILD_CACHE},mode=max,tag=${IMAGE_TAG} \
+            --export-cache type=local,dest=${BUILD_CACHE},mode=max \
             --import-cache type=local,src=${BUILD_CACHE} \
             --output type=docker,name=${IMAGE_NAME} | docker load
           echo "Cache size: $(du -sh ${BUILD_CACHE})"
@@ -128,6 +128,9 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-container-registry.outputs.registry }}
           ECR_REPOSITORY: ${{ inputs.APP_NAME }}
         run: |
+          docker tag \
+            $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
           docker tag \
             $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }} \
             $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
