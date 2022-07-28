@@ -91,7 +91,7 @@ jobs:
         run: |
           docker build . \
             --progress plain \
-            --file Dockerfile \${{ steps.tests.outputs.stdout }}
+            --file Dockerfile \
             --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
           docker tag \
             $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }} \
