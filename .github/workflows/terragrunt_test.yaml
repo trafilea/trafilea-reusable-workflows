@@ -10,11 +10,9 @@ on:
         required: false
         default: "us-east-1"
         type: string
-      PATH:
-        required: true
-        type: string
       DOCKER_IMAGE_TAG:
         required: false
+        default: any
         type: string
 
     secrets:
@@ -24,14 +22,12 @@ on:
         required: true
       GH_WORKFLOW_TOKEN:
         required: true
-      TE_DD_API_KEY:
-        required: false
       DB_PASSWORD:
         required: false
 
 jobs:
   check_org:
-    name: Check calling organization
+    name: Check Caller
     runs-on: ubuntu-latest
 
     steps:
@@ -44,14 +40,11 @@ jobs:
 
   deploy:
     needs: check_org
-    name: deploy
+    name: Test Infra
     runs-on: ubuntu-latest
 
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
-      TF_VAR_datadog_api_key: ${{ secrets.TE_DD_API_KEY }}
       TF_VAR_docker_image_tag: ${{ inputs.DOCKER_IMAGE_TAG }}
       TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
       ENV: ${{ inputs.ENVIRONMENT }}
@@ -85,4 +78,4 @@ jobs:
 
       - name: Terragrunt Plan
         run: terragrunt run-all plan --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
-        working-directory: ${{ github.workspace }}/terraform/environment/${{ inputs.PATH }}/
+        working-directory: ${{ github.workspace }}/terraform/environment/${{ inputs.ENVIRONMENT }}/
