@@ -2,7 +2,7 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
-## [2.1.0] - 22/09/2022
+## [2.0.0] - 22/09/2022
 ### Added
 - `terragrunt_deploy_dns.yaml` workflow for deploying Cloudflare DNS Records
 - `terragrunt_test_dns.yaml` workflow for test Cloudflare DNS Records
