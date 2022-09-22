@@ -1,5 +1,4 @@
-name: Deploy using Terragrunt
-
+name: Terragrunt - Deploy Domains
 on:
   workflow_call:
     inputs:

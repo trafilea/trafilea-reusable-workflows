@@ -1,4 +1,4 @@
-name: Run terraform plan
+name: Terragrunt - Test Domains
 
 on:
   workflow_call:
