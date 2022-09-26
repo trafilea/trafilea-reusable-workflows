@@ -2,6 +2,12 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [2.1.0] - 26/09/2022
+### Changed
+- `terragrunt_deploy_dns.yaml`: adding CloudFlare API Token secret requirement
+- `terragrunt_test_dns.yaml`: adding CloudFlare API Token secret requirement
+
+
 ## [2.0.0] - 22/09/2022
 ### Added
 - `terragrunt_deploy_dns.yaml` workflow for deploying Cloudflare DNS Records
