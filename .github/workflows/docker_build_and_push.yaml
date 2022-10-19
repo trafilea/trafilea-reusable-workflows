@@ -63,13 +63,13 @@ jobs:
         id: set-image-tag
         shell: bash
         run: |
-          echo "::set-output name=image_tag::$(echo ${{ github.sha }} | cut -c1-12)"
+          echo "image_tag=$(echo ${{ github.sha }} | cut -c1-12)" >> $GITHUB_OUTPUT
 
       - name: Set LATEST tag
         id: set-latest-tag
         shell: bash
         run: |
-          if [ ${{ github.ref }}  == 'refs/heads/develop' ]; then echo "::set-output name=latest_tag::latest"; else echo "::set-output name=latest_tag::latest-staging"; fi
+          if [ ${{ github.ref }}  == 'refs/heads/develop' ]; then echo "latest_tag=latest" >> $GITHUB_OUTPUT; else echo "latest_tag=latest-staging" >> $GITHUB_OUTPUT; fi
 
       - name: Configure AWS Credentials
         id: configure-credentials
