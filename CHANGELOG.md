@@ -2,6 +2,10 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [3.0.0] - 19/10/2022
+### Changed
+- Upgraded AWS-Configure-Credentials and Checkout actions to node16 on all workflows
+
 ## [2.1.0] - 26/09/2022
 ### Changed
 - `terragrunt_deploy_dns.yaml`: adding CloudFlare API Token secret requirement

@@ -51,7 +51,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.1.0
         with:
           fetch-depth: 0
 
@@ -70,7 +70,7 @@ jobs:
         with:
           terragrunt_version: 0.36.12
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY  }}

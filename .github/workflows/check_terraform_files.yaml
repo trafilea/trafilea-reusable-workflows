@@ -35,7 +35,7 @@ jobs:
       name: Do checks on the terraform files
       steps:
         - name: Checkout code
-          uses: actions/checkout@v2
+          uses: actions/checkout@v3.1.0
           with:
            fetch-depth: 0
 
