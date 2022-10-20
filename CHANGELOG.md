@@ -2,6 +2,14 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [3.0.1] - 20/10/2022
+### Changed
+- `deploy_terraform.yaml`: Terraform version upgraded to `1.2.9`
+- `deploy_terragrunt.yaml`: Terraform version upgraded to `1.2.9`
+- `terragrunt_deploy_dns.yaml`: Terraform version upgraded to `1.2.9`
+- `terragrunt_test_dns`: Terraform version upgraded to `1.2.9`
+- `terragrunt_test`: Terraform version upgraded to `1.2.9`
+
 ## [3.0.0] - 19/10/2022
 ### Changed
 - Upgraded AWS-Configure-Credentials and Checkout actions to node16 on all workflows
