@@ -14,6 +14,10 @@ on:
         required: false
         default: any
         type: string
+      INFRA_PATH:
+        required: false
+        default: terraform
+        type: string
 
     secrets:
       OPS_AWS_ACCESS_KEY_ID:
@@ -78,4 +82,4 @@ jobs:
 
       - name: Terragrunt Plan
         run: terragrunt run-all plan --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
-        working-directory: ${{ github.workspace }}/terraform/environment/${{ inputs.ENVIRONMENT }}/
+        working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/

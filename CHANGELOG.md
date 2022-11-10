@@ -2,6 +2,12 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [3.0.2] - 10/11/2022
+### Added
+- `deploy_terragrunt.yaml` now accepts the input: INFRA_PATH, with "terraform" as a default value
+- `terragrunt_test.yaml` now accepts the input: INFRA_PATH, with "terraform" as a default value
+
+
 ## [3.0.1] - 20/10/2022
 ### Changed
 - `deploy_terraform.yaml`: Terraform version upgraded to `1.2.9`
