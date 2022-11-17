@@ -3,9 +3,6 @@ name: Upload Nodejs Lambda
 on:
   workflow_call:
     inputs:
-      ENVIRONMENT:
-        required: true
-        type: string
       AWS_REGION:
         required: false
         default: "us-east-1"
