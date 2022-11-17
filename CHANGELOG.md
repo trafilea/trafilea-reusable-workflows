@@ -2,6 +2,10 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [3.1.0] - 10/11/2022
+### Added
+- Added `node_lambda_upload.yaml` workflow for uploading Nodejs Lambdas code to S3.
+
 ## [3.0.2] - 10/11/2022
 ### Added
 - `deploy_terragrunt.yaml` now accepts the input: INFRA_PATH, with "terraform" as a default value
