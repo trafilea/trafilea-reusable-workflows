@@ -2,7 +2,7 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
-## [3.1.0] - 10/11/2022
+## [3.1.0] - 17/11/2022
 ### Added
 - Added `node_lambda_upload.yaml` workflow for uploading Nodejs Lambdas code to S3.
 
