@@ -17,6 +17,11 @@ on:
         required: true
         type: string
 
+    outputs:
+      package_version:
+        description: Package Version created on the workflow
+        value: ${{ jobs.upload_lambda.outputs.package_version}}
+
     secrets:
       OPS_AWS_ACCESS_KEY_ID:
         required: true
