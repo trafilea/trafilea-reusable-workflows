@@ -14,7 +14,7 @@ on:
         required: false
         default: any
         type: string
-        PACKAGE_VERSION:
+      PACKAGE_VERSION:
         required: false
         version: some-ver
         type: string
