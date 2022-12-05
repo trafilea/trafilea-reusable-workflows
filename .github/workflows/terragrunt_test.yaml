@@ -16,7 +16,7 @@ on:
         type: string
       PACKAGE_VERSION:
         required: false
-        version: some-ver
+        default: some-ver
         type: string
       INFRA_PATH:
         required: false

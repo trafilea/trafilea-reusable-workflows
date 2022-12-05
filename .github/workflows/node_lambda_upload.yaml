@@ -49,7 +49,7 @@ jobs:
       package_version: ${{ steps.generate-package.outputs.package_version }}
 
 
-     steps:
+    steps:
       - name: Checkout Source Code
         uses: actions/checkout@v3
         with:
