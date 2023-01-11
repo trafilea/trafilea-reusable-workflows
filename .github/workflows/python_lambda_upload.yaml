@@ -1,0 +1,110 @@
+name: Upload Nodejs Lambda
+
+on:
+  workflow_call:
+    inputs:
+      AWS_REGION:
+        required: false
+        default: "us-east-1"
+        type: string
+      PROJECT_NAME:
+        required: true
+        type: string
+      S3_BUCKET_BUILDS:
+        required: true
+        type: string
+      HANDLERS_FOLDER:
+        required: false
+        type: string
+        default: "src/handlers"
+
+    outputs:
+      package_version:
+        description: Package Version created on the workflow
+        value: ${{ jobs.upload_lambda.outputs.package_version}}
+
+    secrets:
+      OPS_AWS_ACCESS_KEY_ID:
+        required: true
+      OPS_AWS_SECRET_ACCESS_KEY:
+        required: true
+      GH_WORKFLOW_TOKEN:
+        required: true
+
+
+jobs:
+  check_org:
+    name: Check Caller
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check the calling organization
+        if: ${{ github.repository_owner != 'trafilea' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('This reusable workflow can only be used by Trafilea.')
+  
+  upload_lambda:
+    needs: check_org
+    name: Build and Upload Lambdas
+    runs-on: ubuntu-latest
+    outputs:
+      package_version: ${{ steps.generate-package.outputs.package_version }}
+
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v3
+        with:
+          path: main
+          fetch-depth: 0
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY  }}
+          aws-region: "${{ inputs.AWS_REGION }}"
+
+      - name: Generate package
+        id: generate-package
+        env:
+          AWS_S3_BUCKET: ${{ inputs.S3_BUCKET_BUILDS }}
+          PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
+          HANDLERS_FOLDER: ${{ inputs.HANDLERS_FOLDER }}
+        run: |
+          pip install -r requirements.txt --target ./package
+          PACKAGE_VERSION=$(echo ${{ github.sha }} | cut -c1-7)
+          zip -r $PROJECT_NAME-$PACKAGE_VERSION.zip ./package
+          zip -r $PROJECT_NAME-$PACKAGE_VERSION.zip $HANDLERS_FOLDER
+          echo "package_zip=$PROJECT_NAME-$PACKAGE_VERSION.zip" >> $GITHUB_OUTPUT
+          echo "package_version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
+        working-directory: ${{ github.workspace }}/main/
+
+      - name: Upload build to Amazon S3
+        env:
+          PACKAGE_FILE: ${{ steps.generate-package.outputs.package_zip }}
+          AWS_S3_BUCKET: ${{ inputs.S3_BUCKET_BUILDS }}
+          PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
+        run: |
+          aws s3 cp $PACKAGE_FILE s3://$AWS_S3_BUCKET/$PROJECT_NAME/
+        working-directory: ${{ github.workspace }}/main/
+
+      - name: Generate SHA256 build file
+        id: generate-package-sha256
+        env:
+          PACKAGE_FILE: ${{ steps.generate-package.outputs.package_zip }}
+        run: |
+          openssl dgst -sha256 -binary $PACKAGE_FILE | openssl enc -base64 > $PACKAGE_FILE.sha256
+          echo "package_zip_sha256=$PACKAGE_FILE.sha256" >> $GITHUB_OUTPUT
+        working-directory: ${{ github.workspace }}/main/
+
+      - name: Upload SHA256 build to Amazon S3
+        env:
+          PACKAGE_FILE_SHA256: ${{ steps.generate-package-sha256.outputs.package_zip_sha256 }}
+          AWS_S3_BUCKET: ${{ inputs.S3_BUCKET_BUILDS }}
+          PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
+        run: |
+          aws s3 cp --content-type text/plain $PACKAGE_FILE_SHA256 s3://$AWS_S3_BUCKET/$PROJECT_NAME/
+        working-directory: ${{ github.workspace }}/main/
