@@ -2,6 +2,11 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [3.1.2] - 16/01/2023
+### Changed
+- Changed `python_lambda_upload.yaml` workflow name to _Upload Python Lambda_.
+- Changed `node_lambda_upload.yaml` by adding optional input *LAMBDAS_FOLDER*
+
 ## [3.1.1] - 11/01/2023
 ### Added
 - Added `python_lambda_upload.yaml` workflow for uploading Python Lambdas code to S3.

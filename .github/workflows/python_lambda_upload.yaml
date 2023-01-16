@@ -1,4 +1,4 @@
-name: Upload Nodejs Lambda
+name: Upload Python Lambda
 
 on:
   workflow_call:

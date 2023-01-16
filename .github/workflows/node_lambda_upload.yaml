@@ -13,6 +13,10 @@ on:
       S3_BUCKET_BUILDS:
         required: true
         type: string
+      LAMBDAS_FOLDER:
+        required: false
+        type: string
+        default: ""
 
     outputs:
       package_version:
@@ -74,7 +78,7 @@ jobs:
           zip -r $PROJECT_NAME-$PACKAGE_VERSION.zip node_modules src
           echo "package_zip=$PROJECT_NAME-$PACKAGE_VERSION.zip" >> $GITHUB_OUTPUT
           echo "package_version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
-        working-directory: ${{ github.workspace }}/main/
+        working-directory: ${{ github.workspace }}/main/${{ inputs.LAMBDAS_FOLDER }}
 
       - name: Upload build to Amazon S3
         env:
@@ -83,7 +87,7 @@ jobs:
           PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
         run: |
           aws s3 cp $PACKAGE_FILE s3://$AWS_S3_BUCKET/$PROJECT_NAME/
-        working-directory: ${{ github.workspace }}/main/
+        working-directory: ${{ github.workspace }}/main/${{ inputs.LAMBDAS_FOLDER }}
 
       - name: Generate SHA256 build file
         id: generate-package-sha256
@@ -92,7 +96,7 @@ jobs:
         run: |
           openssl dgst -sha256 -binary $PACKAGE_FILE | openssl enc -base64 > $PACKAGE_FILE.sha256
           echo "package_zip_sha256=$PACKAGE_FILE.sha256" >> $GITHUB_OUTPUT
-        working-directory: ${{ github.workspace }}/main/
+        working-directory: ${{ github.workspace }}/main/${{ inputs.LAMBDAS_FOLDER }}
 
       - name: Upload SHA256 build to Amazon S3
         env:
@@ -101,4 +105,4 @@ jobs:
           PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
         run: |
           aws s3 cp --content-type text/plain $PACKAGE_FILE_SHA256 s3://$AWS_S3_BUCKET/$PROJECT_NAME/
-        working-directory: ${{ github.workspace }}/main/
+        working-directory: ${{ github.workspace }}/main/${{ inputs.LAMBDAS_FOLDER }}
