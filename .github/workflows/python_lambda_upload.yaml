@@ -90,7 +90,9 @@ jobs:
           PACKAGE_FILE: ${{ steps.generate-package.outputs.package_zip }}
           AWS_S3_BUCKET: ${{ inputs.S3_BUCKET_BUILDS }}
           PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
+          HANDLERS_FOLDER: ${{ inputs.HANDLERS_FOLDER }}
         run: |
+          cd $HANDLERS_FOLDER
           aws s3 cp $PACKAGE_FILE s3://$AWS_S3_BUCKET/$PROJECT_NAME/
         working-directory: ${{ github.workspace }}/main/
 
@@ -98,7 +100,9 @@ jobs:
         id: generate-package-sha256
         env:
           PACKAGE_FILE: ${{ steps.generate-package.outputs.package_zip }}
+          HANDLERS_FOLDER: ${{ inputs.HANDLERS_FOLDER }}
         run: |
+          cd $HANDLERS_FOLDER
           openssl dgst -sha256 -binary $PACKAGE_FILE | openssl enc -base64 > $PACKAGE_FILE.sha256
           echo "package_zip_sha256=$PACKAGE_FILE.sha256" >> $GITHUB_OUTPUT
         working-directory: ${{ github.workspace }}/main/
@@ -109,5 +113,6 @@ jobs:
           AWS_S3_BUCKET: ${{ inputs.S3_BUCKET_BUILDS }}
           PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
         run: |
+          cd $HANDLERS_FOLDER
           aws s3 cp --content-type text/plain $PACKAGE_FILE_SHA256 s3://$AWS_S3_BUCKET/$PROJECT_NAME/
         working-directory: ${{ github.workspace }}/main/
