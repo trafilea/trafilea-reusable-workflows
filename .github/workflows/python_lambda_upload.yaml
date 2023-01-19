@@ -112,6 +112,7 @@ jobs:
           PACKAGE_FILE_SHA256: ${{ steps.generate-package-sha256.outputs.package_zip_sha256 }}
           AWS_S3_BUCKET: ${{ inputs.S3_BUCKET_BUILDS }}
           PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
+          HANDLERS_FOLDER: ${{ inputs.HANDLERS_FOLDER }}
         run: |
           cd $HANDLERS_FOLDER
           aws s3 cp --content-type text/plain $PACKAGE_FILE_SHA256 s3://$AWS_S3_BUCKET/$PROJECT_NAME/
