@@ -85,9 +85,9 @@ jobs:
           aws-region: "${{ inputs.AWS_REGION }}"
 
       - name: Terragrunt Plan
-        run: terragrunt run-all plan --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
+        run: terragrunt run-all plan --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color --terragrunt-exclude-dir ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/sync-reviews-heavy --terragrunt-exclude-dir ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/sync-reviews-task
         working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
 
       - name: Terragrunt Apply
-        run: terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color
+        run: terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color --terragrunt-exclude-dir ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/sync-reviews-heavy --terragrunt-exclude-dir ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/sync-reviews-task
         working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
