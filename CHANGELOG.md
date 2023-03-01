@@ -2,6 +2,10 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [4.0.0] - 01/03/2023
+### Changed
+- Changed `deploy_terragrunt.yaml` - Now checking if the ECR Image exists before making the deploy and sending event to DataDog after a sucessful deploy
+
 ## [3.1.2] - 16/01/2023
 ### Changed
 - Changed `python_lambda_upload.yaml` workflow name to _Upload Python Lambda_.

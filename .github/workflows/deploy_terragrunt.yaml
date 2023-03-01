@@ -3,6 +3,9 @@ name: Deploy using Terragrunt
 on:
   workflow_call:
     inputs:
+      APP_NAME:
+        required: true
+        type: string
       ENVIRONMENT:
         required: true
         type: string
@@ -27,6 +30,8 @@ on:
       OPS_AWS_SECRET_ACCESS_KEY:
         required: true
       GH_WORKFLOW_TOKEN:
+        required: true
+      TE_DD_API_KEY:
         required: true
       DB_PASSWORD:
         required: false
@@ -66,6 +71,37 @@ jobs:
           git config --local --remove-section http."https://github.com/"
           git config --global url."https://foo:${{ secrets.GH_WORKFLOW_TOKEN }}@github.com/trafilea".insteadOf "https://github.com/trafilea"
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY  }}
+          aws-region: "${{ inputs.AWS_REGION }}"
+      
+      - name: Clone action definition
+        uses: actions/checkout@v3
+        with:
+          repository: teracloud-io/check-ecr-image-exists-action
+          ref: main
+          fetch-depth: 0
+          path: ./.github/action-check-image-exists
+      
+      - name: Check if Image exists
+        if: ${{ inputs.DOCKER_IMAGE_TAG != '' }}
+        id: check-image
+        uses: ./.github/action-check-image-exists
+        with:
+          ecr-repository: ${{ inputs.APP_NAME }}
+          image-tag: ${{ inputs.DOCKER_IMAGE_TAG }}
+          region: us-east-1
+      
+      - name: Cancel if image doesn't exists
+        if: ${{ steps.check-image.outputs.exists == 0 && inputs.DOCKER_IMAGE_TAG != '' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('The image you are trying to deploy doesn't exists')
+
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v1
         with:
@@ -77,13 +113,6 @@ jobs:
         with:
           terragrunt_version: 0.36.12
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY  }}
-          aws-region: "${{ inputs.AWS_REGION }}"
-
       - name: Terragrunt Plan
         run: terragrunt run-all plan --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
         working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
@@ -91,3 +120,17 @@ jobs:
       - name: Terragrunt Apply
         run: terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color
         working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
+
+      - name: Datadog
+        uses: masci/datadog@v1
+        if: ${{ inputs.ENVIRONMENT == 'prod' && inputs.DOCKER_IMAGE_TAG != ''}}
+        with:
+          api-url: https://trafilea-engine.datadoghq.com
+          api-key: ${{ secrets.TE_DD_API_KEY }}
+          events: |
+            - title: "Production Deployment ran sucessfully for ${{ inputs.APP_NAME }}"
+              text: "Version ${{ inputs.DOCKER_IMAGE_TAG }} was deployed to Production on ${{ inputs.APP_NAME }}"
+              alert_type: "info"
+              host: ${{ github.repository_owner }}
+              tags:
+                - "project:${{ inputs.APP_NAME }}"
