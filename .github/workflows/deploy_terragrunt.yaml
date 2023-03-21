@@ -94,13 +94,6 @@ jobs:
           ecr-repository: ${{ inputs.APP_NAME }}
           image-tag: ${{ inputs.DOCKER_IMAGE_TAG }}
           region: us-east-1
-      
-      - name: Cancel if image doesn't exists
-        if: ${{ steps.check-image.outputs.exists == 0 && inputs.DOCKER_IMAGE_TAG != '' }}
-        uses: actions/github-script@v3
-        with:
-          script: |
-            core.setFailed('The image you are trying to deploy doesn't exists')
 
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v1
