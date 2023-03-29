@@ -74,7 +74,7 @@ jobs:
           PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
         run: |
           npm install --only=prod
-          PACKAGE_VERSION=$(echo ${{ github.sha }} | cut -c1-7)
+          PACKAGE_VERSION=$(echo ${{ github.sha }} | cut -c1-12)
           zip -r $PROJECT_NAME-$PACKAGE_VERSION.zip node_modules src
           echo "package_zip=$PROJECT_NAME-$PACKAGE_VERSION.zip" >> $GITHUB_OUTPUT
           echo "package_version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
