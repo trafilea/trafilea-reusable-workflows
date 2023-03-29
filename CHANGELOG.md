@@ -5,6 +5,7 @@ All notable changes to this project will be documented on this file
 ## [4.1.0] - 29/03/2023
 ### Changed
 - Changed `node_lambda_upload.yaml`- Now using 12 DIGITS for Commit SHA instead of 7
+- Changed `python_lambda_upload.yaml`- Now using 12 DIGITS for Commit SHA instead of 7
 
 ## [4.0.0] - 01/03/2023
 ### Changed

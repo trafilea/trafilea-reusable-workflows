@@ -76,7 +76,7 @@ jobs:
         run: |
           pip install -r requirements.txt --target ./package
           cd package
-          PACKAGE_VERSION=$(echo ${{ github.sha }} | cut -c1-7)
+          PACKAGE_VERSION=$(echo ${{ github.sha }} | cut -c1-12)
           zip -r ../$HANDLERS_FOLDER/$PROJECT_NAME-$PACKAGE_VERSION.zip .
           cd ..
           cd $HANDLERS_FOLDER
