@@ -1,0 +1,72 @@
+name: Sync to S3
+
+on:
+  workflow_call:
+
+    inputs:
+      APP_NAME:
+        required: true
+        type: string
+      AWS_REGION:
+        required: false
+        type: string
+        default: "US-EAST-1"
+      BUCKET_NAME:
+        required: true
+        description: "Target bucket to sync"
+        type: string
+      BUCKET_PREFIX:
+        required: false
+        type: string
+        description: "Prefix to sync to in the bucket"
+        default: ""
+      LOCAL_PREFIX:
+        required: false
+        type: string
+        description: "Local repo prefix to sync to the bucket. Syncs all by default"
+        default: "."
+
+    secrets:
+      OPS_AWS_ACCESS_KEY_ID:
+        required: true
+      OPS_AWS_SECRET_ACCESS_KEY:
+        required: true
+      GH_WORKFLOW_TOKEN:
+        required: true
+jobs:
+
+  check_org:
+    name: Check Caller
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check the calling organization
+        if: ${{ github.repository_owner != 'trafilea' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('This reusable workflow can only be used by Trafilea.')
+  
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Checkout code
+      uses: actions/checkout@v3.1.0
+      with:
+        submodules: true
+        fetch-depth: 0
+        token: ${{ secrets.GH_WORKFLOW_TOKEN }}
+
+    - name: Configure AWS Credentials
+      id: configure-credentials
+      uses: aws-actions/configure-aws-credentials@v1-node16
+      with:
+        aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ inputs.AWS_REGION }}
+
+    - name: Upload to S3
+      run: |
+        aws s3 sync ${{ inputs.LOCAL_PREFIX }} s3://${{ inputs.BUCKET_NAME }}/${{ inputs.BUCKET_PREFIX }} --exclude '.git/*' --exclude '.github/*' --delete
