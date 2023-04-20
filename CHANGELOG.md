@@ -2,6 +2,10 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [4.2.0] - 20/04/2023
+### Added
+- Added new workflow `upload_to_s3.yaml` to upload files from a repo to an S3 bucket, optionally with paths in source and target.
+
 ## [4.1.0] - 29/03/2023
 ### Changed
 - Changed `node_lambda_upload.yaml`- Now using 12 DIGITS for Commit SHA instead of 7
