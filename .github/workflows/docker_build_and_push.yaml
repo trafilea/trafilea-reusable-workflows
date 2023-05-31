@@ -10,9 +10,10 @@ on:
         required: false
         type: string
         default: "us-east-1"
-      DOCKER_ENV:
+      DOCKER_BUILD_ARGS:
         required: false
         type: string
+        default: "DEFAULT=default"
 
     outputs:
       image_tag:
@@ -92,8 +93,8 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-container-registry.outputs.registry }}
           ECR_REPOSITORY: ${{ inputs.APP_NAME }}
         run: |
-          [ ! -z '${{ inputs.DOCKER_ENV }}' ] && export $(echo '${{ inputs.DOCKER_ENV }}' | xargs);
           docker build . \
+            --build-arg ${{ inputs.DOCKER_BUILD_ARGS }}
             --progress plain \
             --file Dockerfile \
             --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
