@@ -94,7 +94,7 @@ jobs:
           ECR_REPOSITORY: ${{ inputs.APP_NAME }}
         run: |
           docker build . \
-            ${{ inputs.DOCKER_BUILD_ARGS }}
+            ${{ inputs.DOCKER_BUILD_ARGS }} \
             --progress plain \
             --file Dockerfile \
             --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
