@@ -62,8 +62,8 @@ jobs:
       
       - name: Configure Git User creds
         run: |
-          git config --global user.email "you@example.com"
-          git config --global user.name "Your Name"
+          git config --global user.email "actions@github.com"
+          git config --global user.name "Actions"
 
 
       - name: Stage changes
