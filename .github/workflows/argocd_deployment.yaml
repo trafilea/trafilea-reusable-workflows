@@ -59,6 +59,12 @@ jobs:
         run: |
           OLD_TAG=$(cat $ENV/apps/microservices/$APP_NAME/$APP_NAME.yaml | grep tag: | awk '{print $2}')
           sed -i "s/tag: $OLD_TAG/tag: $IMAGE_TAG/g" $ENV/apps/microservices/$APP_NAME/$APP_NAME.yaml
+      
+      - name: Configure Git User creds
+        run: |
+          git config --global user.email "you@example.com"
+          git config --global user.name "Your Name"
+
 
       - name: Stage changes
         run: git add .
