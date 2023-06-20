@@ -16,6 +16,8 @@ on:
     secrets:
       GH_WORKFLOW_TOKEN:
         required: true
+      ARGOCD_TOKEN:
+        required: true
 
 
 jobs:
@@ -74,3 +76,16 @@ jobs:
 
       - name: Push changes
         run: git push origin main
+      
+      - name: Set destination
+        id: setdest
+        run: |
+          if [ ${{ inputs.ENVIRONMENT }}  == 'dev' ]; then echo "SERVER_ADDRESS=argo.development.trafilea.app" >> $GITHUB_OUTPUT; elif [ ${{ inputs.ENVIRONMENT }}  == 'stage' ]; then echo "SERVER_ADDRESS=argo.staging.trafilea.app" >> $GITHUB_OUTPUT; else echo "SERVER_ADDRESS=argo.production.trafilea.app" >> $GITHUB_OUTPUT; fi
+
+      - name: Sync ArgoCD Application
+        uses: omegion/argocd-actions@v1
+        with:
+          address: ${{ steps.setdest.outputs.SERVER_ADDRESS }}
+          token: ${{ secrets.ARGOCD_TOKEN }}
+          action: sync
+          appName: ${{ inputs.APP_NAME }}
