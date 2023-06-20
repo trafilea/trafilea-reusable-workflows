@@ -10,6 +10,10 @@ on:
         required: false
         type: string
         default: "us-east-1"
+      DOCKER_BUILD_ARGS:
+        required: false
+        type: string
+        default: "--progress plain --file Dockerfile"
 
     outputs:
       image_tag:
@@ -90,8 +94,7 @@ jobs:
           ECR_REPOSITORY: ${{ inputs.APP_NAME }}
         run: |
           docker build . \
-            --progress plain \
-            --file Dockerfile \
+            ${{ inputs.DOCKER_BUILD_ARGS }} \
             --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
           docker tag \
             $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }} \
