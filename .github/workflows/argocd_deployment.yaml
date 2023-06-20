@@ -1,0 +1,91 @@
+name: ArgoCD Deployment
+
+on:
+  workflow_call:
+    inputs:
+      APP_NAME:
+        required: true
+        type: string
+      ENVIRONMENT:
+        required: true
+        type: string
+      DOCKER_IMAGE_TAG:
+        required: false
+        type: string
+
+    secrets:
+      GH_WORKFLOW_TOKEN:
+        required: true
+      ARGOCD_TOKEN:
+        required: true
+
+
+jobs:
+  check_org:
+    name: Check Caller
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check the calling organization
+        if: ${{ github.repository_owner != 'trafilea' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('This reusable workflow can only be used by Trafilea.')
+
+  deploy:
+    needs: check_org
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    env:
+      ENV: ${{ inputs.ENVIRONMENT }}
+      APP_NAME: ${{ inputs.APP_NAME }}
+      IMAGE_TAG: ${{ inputs.DOCKER_IMAGE_TAG }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Clone GitOps Repo
+        uses: actions/checkout@v3
+        with:
+          repository: trafilea/trafilea-gitops
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GH_WORKFLOW_TOKEN }}
+      
+      - name: Replace Image Tag
+        run: |
+          OLD_TAG=$(cat $ENV/apps/microservices/$APP_NAME/$APP_NAME.yaml | grep tag: | awk '{print $2}')
+          sed -i "s/tag: $OLD_TAG/tag: $IMAGE_TAG/g" $ENV/apps/microservices/$APP_NAME/$APP_NAME.yaml
+      
+      - name: Configure Git User creds
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "Actions"
+
+
+      - name: Stage changes
+        run: git add .
+
+      - name: Commit new file
+        run: git diff-index --quiet HEAD || git commit -m "Updating $APP_NAME version on $ENV environment"
+
+      - name: Push changes
+        run: git push origin main
+      
+      - name: Set destination
+        id: setdest
+        run: |
+          if [ ${{ inputs.ENVIRONMENT }}  == 'dev' ]; then echo "SERVER_ADDRESS=argo.development.trafilea.app" >> $GITHUB_OUTPUT; elif [ ${{ inputs.ENVIRONMENT }}  == 'stage' ]; then echo "SERVER_ADDRESS=argo.staging.trafilea.app" >> $GITHUB_OUTPUT; else echo "SERVER_ADDRESS=argo.production.trafilea.app" >> $GITHUB_OUTPUT; fi
+
+      - name: Sync ArgoCD Application
+        uses: omegion/argocd-actions@v1
+        with:
+          address: ${{ steps.setdest.outputs.SERVER_ADDRESS }}
+          token: ${{ secrets.ARGOCD_TOKEN }}
+          action: sync
+          appName: ${{ inputs.APP_NAME }}

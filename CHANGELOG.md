@@ -2,9 +2,10 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
-## [4.2.0] - 20/04/2023
+## [4.2.0] - 20/06/2023
 ### Added
-- Added new workflow `upload_to_s3.yaml` to upload files from a repo to an S3 bucket, optionally with paths in source and target.
+- Added `argocd_depoyment.yaml` workflow for commiting to GitOps repo and syncing the ArgoCD App.
+- Added `docker_release.yaml` workflow for pushing a Docker image to ECR with a custom tag.
 
 ## [4.1.0] - 29/03/2023
 ### Changed
