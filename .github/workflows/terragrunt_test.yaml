@@ -64,7 +64,7 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Check Disk Space
+      - name: Check Disk Space before
         run: |
           df -H
 
@@ -92,3 +92,7 @@ jobs:
       - name: Terragrunt Plan
         run: terragrunt run-all plan --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
         working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
+
+      - name: Check Disk Space after
+        run: |
+          df -H
