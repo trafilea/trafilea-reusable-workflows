@@ -81,6 +81,7 @@ jobs:
         id: setdest
         run: |
           if [ ${{ inputs.ENVIRONMENT }}  == 'dev' ]; then echo "SERVER_ADDRESS=argo.development.trafilea.app" >> $GITHUB_OUTPUT; elif [ ${{ inputs.ENVIRONMENT }}  == 'stage' ]; then echo "SERVER_ADDRESS=argo.staging.trafilea.app" >> $GITHUB_OUTPUT; else echo "SERVER_ADDRESS=argo.production.trafilea.app" >> $GITHUB_OUTPUT; fi
+          sleep 5
 
       - name: Sync ArgoCD Application
         uses: omegion/argocd-actions@v1
