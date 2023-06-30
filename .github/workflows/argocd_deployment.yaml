@@ -41,6 +41,7 @@ jobs:
     env:
       ENV: ${{ inputs.ENVIRONMENT }}
       IMAGE_TAG: ${{ inputs.DOCKER_IMAGE_TAG }}
+      APP_NAME: ${{ inputs.APP_NAME }}
 
     steps:
       - name: Checkout code
