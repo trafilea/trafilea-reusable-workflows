@@ -9,6 +9,9 @@ on:
       DOCKER_IMAGE_TAG:
         required: false
         type: string
+      APP_NAME:
+        required: true
+        type: string
 
     secrets:
       GH_WORKFLOW_TOKEN:
