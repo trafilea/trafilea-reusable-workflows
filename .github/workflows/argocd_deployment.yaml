@@ -3,9 +3,6 @@ name: ArgoCD Deployment
 on:
   workflow_call:
     inputs:
-      APP_NAME:
-        required: true
-        type: string
       ENVIRONMENT:
         required: true
         type: string
@@ -40,7 +37,6 @@ jobs:
 
     env:
       ENV: ${{ inputs.ENVIRONMENT }}
-      APP_NAME: ${{ inputs.APP_NAME }}
       IMAGE_TAG: ${{ inputs.DOCKER_IMAGE_TAG }}
 
     steps:
@@ -89,4 +85,4 @@ jobs:
           address: ${{ steps.setdest.outputs.SERVER_ADDRESS }}
           token: ${{ secrets.ARGOCD_TOKEN }}
           action: sync
-          appName: ${{ inputs.APP_NAME }}
+          appName: applications
