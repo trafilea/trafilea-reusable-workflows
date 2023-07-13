@@ -2,6 +2,10 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [4.2.1] - 13/07/2023
+### Added
+- Added TF_VAR_github_access_token to `deploy_terragrunt.yaml`
+
 ## [4.2.0] - 20/06/2023
 ### Added
 - Added `argocd_depoyment.yaml` workflow for commiting to GitOps repo and syncing the ArgoCD App.
