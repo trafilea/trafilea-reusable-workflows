@@ -19,7 +19,10 @@ on:
         type: string
       BUILD_COMMAND:
         required: true
-        type : string
+        type: string
+      INSTALL_COMMAND:
+        required: true
+        type: string
 
 
     secrets:
@@ -84,6 +87,7 @@ jobs:
 
       - name: Run the build command
         run: |
+          ${{ inputs.INSTALL_COMMAND }}
           ${{ inputs.BUILD_COMMAND }}
 
       - name: Get Cloudfront Distribution Domain
