@@ -108,6 +108,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY  }}
           role-to-assume: arn:aws:iam::${{ inputs.ENVIRONMENT_ACCOUNT_ID }}:role/terraform-admin-role
           aws-region: "${{ inputs.AWS_REGION }}"
+          role-duration-seconds: 3600
 
       - name: S3 Upload and Cloudfront Invalidation
         uses: reggionick/s3-deploy@v3
