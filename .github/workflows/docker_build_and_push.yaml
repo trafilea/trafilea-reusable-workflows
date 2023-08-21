@@ -31,7 +31,6 @@ on:
       GH_WORKFLOW_TOKEN:
         required: true
 
-
 jobs:
   check_org:
     name: Check Caller
@@ -45,7 +44,6 @@ jobs:
           script: |
             core.setFailed('This reusable workflow can only be used by Trafilea.')
 
-
   build_n_push:
     needs: check_org
     name: Build and Push to ECR
@@ -53,7 +51,6 @@ jobs:
     outputs:
       image_tag: ${{ steps.set-image-tag.outputs.image_tag }}
       latest_tag: ${{ steps.set-latest-tag.outputs.latest_tag }}
-
 
     steps:
       - name: Checkout code
@@ -73,7 +70,11 @@ jobs:
         id: set-latest-tag
         shell: bash
         run: |
-          if [ ${{ github.ref }}  == 'refs/heads/develop' ]; then echo "latest_tag=latest" >> $GITHUB_OUTPUT; else echo "latest_tag=latest-staging" >> $GITHUB_OUTPUT; fi
+          if [ ${{ github.ref }} == 'refs/heads/develop' ]; then
+            echo "latest_tag=latest-dev" >> $GITHUB_OUTPUT;
+          elif [ ${{ github.ref }} == 'refs/heads/main' ]; then
+            echo "latest_tag=latest-prod" >> $GITHUB_OUTPUT;
+          fi
 
       - name: Configure AWS Credentials
         id: configure-credentials
