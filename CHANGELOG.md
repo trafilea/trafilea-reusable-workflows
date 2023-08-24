@@ -2,6 +2,10 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [4.4.0] - 24/08/2023
+### Added
+- Changed `deploy_terragrunt.yaml` - Now the DataDog keys are included as environment vars for use in Terragrunt.
+
 ## [4.3.0] - 16/08/2023
 ### Added
 - Added `s3-upload-cdn-invalidation.yaml` workflow for uploading static files to S3 and invalidating the CloudFront cache.

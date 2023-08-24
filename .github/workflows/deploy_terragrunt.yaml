@@ -35,6 +35,10 @@ on:
         required: true
       DB_PASSWORD:
         required: false
+      DD_TF_API_KEY:
+        required: false
+      DD_TF_APP_KEY:
+        required: false
 
 jobs:
   check_org:
@@ -60,6 +64,8 @@ jobs:
       TF_VAR_docker_image_tag: ${{ inputs.DOCKER_IMAGE_TAG }}
       PACKAGE_VERSION: ${{ inputs.PACKAGE_VERSION }}
       ENV: ${{ inputs.ENVIRONMENT }}
+      DD_API_KEY: ${{ secrets.DD_TF_API_KEY }}
+      DD_APP_KEY: ${{ secrets.DD_TF_APP_KEY }}
 
     steps:
       - name: Checkout code
