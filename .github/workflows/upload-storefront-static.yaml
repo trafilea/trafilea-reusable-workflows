@@ -64,6 +64,7 @@ jobs:
 
       - name: Build and Zip package
         run: |
+          rm -f README.md
           zip -r ${{ inputs.PACKAGE_NAME}}-${{ inputs.PACKAGE_VERSION }}.zip . -x '.github/*'
       
       - name: Upload build to Amazon S3

@@ -80,6 +80,7 @@ jobs:
           cp $PACKAGE_FILE content
           cd content
           unzip $PACKAGE_FILE
+          rm -f $PACKAGE_FILE
 
       - name: Configure AWS Credentials for Upload
         uses: aws-actions/configure-aws-credentials@v1-node16
