@@ -6,9 +6,6 @@ on:
       BUILDS_BUCKET:
         required: true
         type: string
-      ENVIRONMENT:
-        required: true
-        type: string
       AWS_REGION:
         required: false
         default: "us-east-1"
@@ -59,7 +56,6 @@ jobs:
 
     env:
       AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
-      ENV: ${{ inputs.ENVIRONMENT }}
 
     steps:
       - name: Checkout code
