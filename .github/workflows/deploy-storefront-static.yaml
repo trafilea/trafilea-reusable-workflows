@@ -9,10 +9,6 @@ on:
         required: false
         default: "us-east-1"
         type: string
-      BUILD_FOLDER:
-        required: false
-        default: dist
-        type: string
       PACKAGE_NAME:
         required: true
         type: string
@@ -81,6 +77,7 @@ jobs:
         run: |
           aws s3 cp s3://$AWS_S3_BUCKET/$PROJECT_NAME/$PACKAGE_FILE $PACKAGE_FILE
           mkdir content
+          cp $PACKAGE_FILE content
           cd content
           unzip $PACKAGE_FILE
 
