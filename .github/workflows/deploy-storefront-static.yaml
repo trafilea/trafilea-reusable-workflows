@@ -99,4 +99,4 @@ jobs:
           bucket-region: us-east-1
           dist-id: ${{ inputs.CLOUDFRONT_ID }}
           invalidation: /
-          delete-removed: true
+          delete-removed: false

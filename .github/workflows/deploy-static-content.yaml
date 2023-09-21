@@ -80,6 +80,7 @@ jobs:
           cp $PACKAGE_FILE content
           cd content
           unzip $PACKAGE_FILE
+          mv .next/* next
           rm -f $PACKAGE_FILE
 
       - name: Configure AWS Credentials for Upload
@@ -99,4 +100,4 @@ jobs:
           bucket-region: us-east-1
           dist-id: ${{ inputs.CLOUDFRONT_ID }}
           invalidation: /
-          delete-removed: true
+          delete-removed: false
