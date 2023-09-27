@@ -93,6 +93,14 @@ jobs:
           aws-region: "${{ inputs.AWS_REGION }}"
           role-duration-seconds: 3600
 
+      - name: Delete old content
+        env:
+          PACKAGE_FILE: ${{ inputs.PACKAGE_NAME}}-${{ inputs.PACKAGE_VERSION }}.zip
+          AWS_S3_BUCKET: ${{ inputs.BUILDS_BUCKET }}
+          PROJECT_NAME: ${{ inputs.PACKAGE_NAME }}
+        run: |
+          aws s3 rm s3://$AWS_S3_BUCKET/common --recursive
+
       - name: S3 Upload and Cloudfront Invalidation
         uses: reggionick/s3-deploy@v3
         with:
