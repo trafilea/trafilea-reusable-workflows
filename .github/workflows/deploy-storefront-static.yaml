@@ -77,8 +77,10 @@ jobs:
         run: |
           aws s3 cp s3://$AWS_S3_BUCKET/$PROJECT_NAME/$PACKAGE_FILE $PACKAGE_FILE
           mkdir content
-          cp $PACKAGE_FILE content
           cd content
+          mkdir common
+          cp ../$PACKAGE_FILE common
+          cd common
           unzip $PACKAGE_FILE
           rm -f $PACKAGE_FILE
 
@@ -98,5 +100,5 @@ jobs:
           bucket: ${{ inputs.CDN_BUCKET  }}
           bucket-region: us-east-1
           dist-id: ${{ inputs.CLOUDFRONT_ID }}
-          invalidation: /
-          delete-removed: false
+          invalidation: /common
+          delete-removed: true
