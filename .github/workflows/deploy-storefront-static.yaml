@@ -82,7 +82,7 @@ jobs:
           cp ../$PACKAGE_FILE common
           cd common
           unzip $PACKAGE_FILE
-          rm -f $PACKAGE_FILE
+          rm -f $PACKAGE_FILE README.md
 
       - name: Configure AWS Credentials for Upload
         uses: aws-actions/configure-aws-credentials@v1-node16
@@ -101,4 +101,4 @@ jobs:
           bucket-region: us-east-1
           dist-id: ${{ inputs.CLOUDFRONT_ID }}
           invalidation: /common
-          delete-removed: true
+          delete-removed: false
