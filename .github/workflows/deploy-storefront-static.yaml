@@ -107,6 +107,7 @@ jobs:
           folder: content
           bucket: ${{ inputs.CDN_BUCKET  }}
           bucket-region: us-east-1
+          private: true
           dist-id: ${{ inputs.CLOUDFRONT_ID }}
           invalidation: /common
           delete-removed: false
