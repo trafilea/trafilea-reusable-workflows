@@ -80,8 +80,8 @@ jobs:
           cp $PACKAGE_FILE content
           cd content
           unzip $PACKAGE_FILE
-          mkdir _next
-          cp -r .next/static _next
+          mkdir -p _next/${{ inputs.PACKAGE_VERSION }}
+          cp -r .next/static _next/${{ inputs.PACKAGE_VERSION }}
           rm -rf .next
           rm -f $PACKAGE_FILE
 
