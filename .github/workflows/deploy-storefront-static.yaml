@@ -78,9 +78,9 @@ jobs:
           aws s3 cp s3://$AWS_S3_BUCKET/$PROJECT_NAME/$PACKAGE_FILE $PACKAGE_FILE
           mkdir content
           cd content
-          mkdir common
-          cp ../$PACKAGE_FILE common
-          cd common
+          mkdir assets
+          cp ../$PACKAGE_FILE assets
+          cd assets
           unzip $PACKAGE_FILE
           rm -f $PACKAGE_FILE README.md
 
@@ -109,5 +109,5 @@ jobs:
           bucket-region: us-east-1
           private: true
           dist-id: ${{ inputs.CLOUDFRONT_ID }}
-          invalidation: /common
+          invalidation: /assets
           delete-removed: false

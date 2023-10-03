@@ -80,8 +80,8 @@ jobs:
           cp $PACKAGE_FILE content
           cd content
           unzip $PACKAGE_FILE
-          mkdir -p _next/${{ inputs.PACKAGE_VERSION }}
-          cp -r .next/static _next/${{ inputs.PACKAGE_VERSION }}
+          mkdir -p ssr/${{ inputs.PACKAGE_VERSION }}/_next/
+          cp -r .next/static ssr/${{ inputs.PACKAGE_VERSION }}/_next
           rm -rf .next
           rm -f $PACKAGE_FILE
 
@@ -102,5 +102,5 @@ jobs:
           bucket-region: us-east-1
           private: true
           dist-id: ${{ inputs.CLOUDFRONT_ID }}
-          invalidation: /_next
+          invalidation: /ssr
           delete-removed: false
