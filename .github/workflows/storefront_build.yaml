@@ -34,10 +34,10 @@ on:
     outputs:
       image_tag:
         description: Image tag created on the workflow
-        value: ${{ jobs.build_n_push.outputs.image_tag }}
+        value: ${{ jobs.upload.outputs.image_tag }}
       latest_tag:
         description: Latest tag created on the workflow
-        value: ${{ jobs.build_n_push.outputs.latest_tag }}
+        value: ${{ jobs.upload.outputs.latest_tag }}
 
     secrets:
       OPS_AWS_ACCESS_KEY_ID:
@@ -64,7 +64,10 @@ jobs:
     needs: check_org
     name: Upload
     runs-on: ubuntu-latest
-
+    outputs:
+      image_tag: ${{ steps.set-image-tag.outputs.image_tag }}
+      latest_tag: ${{ steps.set-latest-tag.outputs.latest_tag }}
+    
     env:
       AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
 
