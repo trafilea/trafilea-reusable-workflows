@@ -23,9 +23,6 @@ on:
       PACKAGE_NAME:
         required: true
         type: string
-      PACKAGE_VERSION:
-        required: true
-        type: string
       APP_NAME:
         required: true
         type: string
