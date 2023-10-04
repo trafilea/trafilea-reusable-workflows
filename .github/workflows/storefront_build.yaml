@@ -41,7 +41,7 @@ on:
       latest_tag:
         description: Latest tag created on the workflow
         value: ${{ jobs.build_n_push.outputs.latest_tag }}
-        
+
     secrets:
       OPS_AWS_ACCESS_KEY_ID:
         required: true
@@ -115,6 +115,7 @@ jobs:
           PROJECT_NAME: ${{ inputs.PACKAGE_NAME }}
         run: |
           aws s3 cp $PACKAGE_FILE s3://$AWS_S3_BUCKET/$PROJECT_NAME/$PACKAGE_FILE
+          rm -f $PACKAGE_FILE
 
       - name: Build and Push Container Image
         id: build-container-image
