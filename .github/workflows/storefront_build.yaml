@@ -1,0 +1,132 @@
+name: Docker - CDN
+
+on:
+  workflow_call:
+    inputs:
+      BUILDS_BUCKET:
+        required: true
+        type: string
+      AWS_REGION:
+        required: false
+        default: "us-east-1"
+        type: string
+      BUILD_FOLDER:
+        required: false
+        default: dist
+        type: string
+      BUILD_COMMAND:
+        required: true
+        type: string
+      INSTALL_COMMAND:
+        required: true
+        type: string
+      PACKAGE_NAME:
+        required: true
+        type: string
+      PACKAGE_VERSION:
+        required: true
+        type: string
+      APP_NAME:
+        required: true
+        type: string
+      DOCKER_BUILD_ARGS:
+        required: false
+        type: string
+        default: "--progress plain --file Dockerfile"
+
+    outputs:
+      image_tag:
+        description: Image tag created on the workflow
+        value: ${{ jobs.build_n_push.outputs.image_tag }}
+      latest_tag:
+        description: Latest tag created on the workflow
+        value: ${{ jobs.build_n_push.outputs.latest_tag }}
+        
+    secrets:
+      OPS_AWS_ACCESS_KEY_ID:
+        required: true
+      OPS_AWS_SECRET_ACCESS_KEY:
+        required: true
+      GH_WORKFLOW_TOKEN:
+        required: true
+
+jobs:
+  check_org:
+    name: Check Caller
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check the calling organization
+        if: ${{ github.repository_owner != 'trafilea' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('This reusable workflow can only be used by Trafilea.')
+
+  upload:
+    needs: check_org
+    name: Upload
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3.1.0
+        with:
+          submodules: true
+          token: ${{ secrets.GH_WORKFLOW_TOKEN }}
+      
+      - name: Set Image tag
+        id: set-image-tag
+        shell: bash
+        run: |
+          echo "image_tag=$(echo ${{ github.sha }} | cut -c1-12)" >> $GITHUB_OUTPUT
+
+      - name: Set LATEST tag
+        id: set-latest-tag
+        shell: bash
+        run: |
+          if [ ${{ github.ref }}  == 'refs/heads/develop' ]; then echo "latest_tag=latest" >> $GITHUB_OUTPUT; else echo "latest_tag=latest-staging" >> $GITHUB_OUTPUT; fi
+
+      - name: Configure AWS Credentials
+        id: configure-credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-container-registry
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and Zip package
+        run: |
+          ${{ inputs.INSTALL_COMMAND }}
+          ${{ inputs.BUILD_COMMAND }}
+          zip -r ${{ inputs.PACKAGE_NAME}}-${{ steps.set-image-tag.outputs.image_tag }}.zip ${{ inputs.BUILD_FOLDER }}
+      
+      - name: Upload build to Amazon S3
+        env:
+          PACKAGE_FILE: ${{ inputs.PACKAGE_NAME}}-${{ steps.set-image-tag.outputs.image_tag }}.zip
+          AWS_S3_BUCKET: ${{ inputs.BUILDS_BUCKET }}
+          PROJECT_NAME: ${{ inputs.PACKAGE_NAME }}
+        run: |
+          aws s3 cp $PACKAGE_FILE s3://$AWS_S3_BUCKET/$PROJECT_NAME/$PACKAGE_FILE
+
+      - name: Build and Push Container Image
+        id: build-container-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-container-registry.outputs.registry }}
+          ECR_REPOSITORY: ${{ inputs.APP_NAME }}
+        run: |
+          docker build . \
+            ${{ inputs.DOCKER_BUILD_ARGS }} \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
+          docker tag \
+            $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }} \
+            $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
