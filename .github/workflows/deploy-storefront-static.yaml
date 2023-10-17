@@ -103,7 +103,7 @@ jobs:
           AWS_S3_BUCKET: ${{ inputs.BUILDS_BUCKET }}
           PROJECT_NAME: ${{ inputs.PACKAGE_NAME }}
         run: |
-          aws s3 rm s3://$AWS_S3_BUCKET/assets --recursive
+          aws s3 rm --recursive s3://$AWS_S3_BUCKET/assets/
 
       - name: S3 Upload and Cloudfront Invalidation
         uses: reggionick/s3-deploy@v3
