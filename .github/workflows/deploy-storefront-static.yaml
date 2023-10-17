@@ -100,7 +100,7 @@ jobs:
       - name: Delete old content
         env:
           PACKAGE_FILE: ${{ inputs.PACKAGE_NAME}}-${{ inputs.PACKAGE_VERSION }}.zip
-          AWS_S3_BUCKET: ${{ inputs.BUILDS_BUCKET }}
+          AWS_S3_BUCKET: ${{ inputs.CDN_BUCKET  }}
           PROJECT_NAME: ${{ inputs.PACKAGE_NAME }}
         run: |
           aws s3 rm --recursive s3://$AWS_S3_BUCKET/assets/
