@@ -21,6 +21,10 @@ on:
       CLOUDFRONT_ID:
         required: true
         type: string
+      CACHE_MAX_AGE:
+        required: false
+        type: string
+        default: "31536000"
       ENVIRONMENT_ACCOUNT_ID:
         required: true
         type: string
@@ -108,6 +112,7 @@ jobs:
           bucket: ${{ inputs.CDN_BUCKET  }}
           bucket-region: us-east-1
           private: true
+          cache: ${{ inputs.CACHE_MAX_AGE }}
           dist-id: ${{ inputs.CLOUDFRONT_ID }}
           invalidation: /assets
           delete-removed: false
