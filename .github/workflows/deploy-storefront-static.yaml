@@ -66,6 +66,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Clone action definition
+        uses: actions/checkout@v3
+        with:
+          repository: trafilea/s3-deploy
+          ref: master
+          fetch-depth: 0
+          path: ./.github/action-s3-deploy
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
@@ -106,7 +114,7 @@ jobs:
           aws s3 rm --recursive s3://$AWS_S3_BUCKET/assets/
 
       - name: S3 Upload and Cloudfront Invalidation
-        uses: reggionick/s3-deploy@v3
+        uses: ./.github/action-s3-deploy
         with:
           folder: content
           bucket: ${{ inputs.CDN_BUCKET  }}
