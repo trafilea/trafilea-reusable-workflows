@@ -1,0 +1,90 @@
+name: Run terraform plan
+
+on:
+  workflow_call:
+    inputs:
+      ENVIRONMENT:
+        required: true
+        type: string
+      AWS_REGION:
+        required: false
+        default: "us-east-1"
+        type: string
+      DOCKER_IMAGE_TAG:
+        required: false
+        default: any
+        type: string
+      PACKAGE_VERSION:
+        required: false
+        default: some-ver
+        type: string
+      INFRA_PATH:
+        required: false
+        default: terraform
+        type: string
+
+    secrets:
+      OPS_AWS_ACCESS_KEY_ID:
+        required: true
+      OPS_AWS_SECRET_ACCESS_KEY:
+        required: true
+      GH_WORKFLOW_TOKEN:
+        required: true
+      DB_PASSWORD:
+        required: false
+
+jobs:
+  check_org:
+    name: Check Caller
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check the calling organization
+        if: ${{ github.repository_owner != 'trafilea' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('This reusable workflow can only be used by Trafilea.')
+
+  deploy:
+    needs: check_org
+    name: Test Infra
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
+      TF_VAR_docker_image_tag: ${{ inputs.DOCKER_IMAGE_TAG }}
+      TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+      PACKAGE_VERSION: ${{ inputs.PACKAGE_VERSION }}
+      ENV: ${{ inputs.ENVIRONMENT }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3.1.0
+        with:
+          fetch-depth: 0
+
+      - run: |
+          git config --local --remove-section http."https://github.com/"
+          git config --global url."https://foo:${{ secrets.GH_WORKFLOW_TOKEN }}@github.com/trafilea".insteadOf "https://github.com/trafilea"
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_wrapper: false
+          terraform_version: 1.2.9
+
+      - name: Install Terragrunt
+        uses: peter-murray/terragrunt-github-action@v1.0.0
+        with:
+          terragrunt_version: 0.36.12
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY  }}
+          aws-region: "${{ inputs.AWS_REGION }}"
+
+      - name: Terragrunt Plan
+        run: terragrunt run-all destroy --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
+        working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
