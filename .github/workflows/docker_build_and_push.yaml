@@ -14,6 +14,10 @@ on:
         required: false
         type: string
         default: "--progress plain --file Dockerfile"
+      DOCKERFILE_FOLDER:
+        required: false
+        type: string
+        default: '.'
 
     outputs:
       image_tag:
@@ -92,7 +96,9 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-container-registry.outputs.registry }}
           ECR_REPOSITORY: ${{ inputs.APP_NAME }}
+          DOCKERFILE_FOLDER: ${{ inputs.DOCKERFILE_FOLDER }}
         run: |
+          cd $DOCKERFILE_FOLDER
           docker build . \
             ${{ inputs.DOCKER_BUILD_ARGS }} \
             --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}

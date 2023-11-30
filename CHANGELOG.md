@@ -2,6 +2,10 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [4.4.1] - 30/11/2023
+### Added
+- Changed `docker_build_and_push.yaml` - Added new input for specifying Dockerfile folder
+
 ## [4.4.0] - 24/08/2023
 ### Added
 - Changed `deploy_terragrunt.yaml` - Now the DataDog keys are included as environment vars for use in Terragrunt.
