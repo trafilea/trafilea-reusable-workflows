@@ -25,6 +25,10 @@ on:
         required: false
         type: string
         default: "31536000"
+      CONTENT_ENCODING:
+        required: false
+        type: string
+        default: "gzip"
       ENVIRONMENT_ACCOUNT_ID:
         required: true
         type: string
@@ -70,7 +74,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: trafilea/s3-deploy
-          ref: master
+          ref: feat/brotli-compression
           fetch-depth: 0
           path: ./.github/action-s3-deploy
 
@@ -120,6 +124,7 @@ jobs:
           bucket: ${{ inputs.CDN_BUCKET  }}
           bucket-region: us-east-1
           private: true
+          content-encoding: ${{ inputs.CONTENT_ENCODING }}
           cache: ${{ inputs.CACHE_MAX_AGE }}
           dist-id: ${{ inputs.CLOUDFRONT_ID }}
           invalidation: /assets

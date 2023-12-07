@@ -1,4 +1,4 @@
-name: Deploy Storefront Static
+name: Deploy Static Content
 on:
   workflow_call:
     inputs:
@@ -25,6 +25,10 @@ on:
         required: false
         type: string
         default: "31536000"
+      CONTENT_ENCODING:
+        required: false
+        type: string
+        default: "gzip"
       ENVIRONMENT_ACCOUNT_ID:
         required: true
         type: string
@@ -65,12 +69,12 @@ jobs:
         uses: actions/checkout@v3.1.0
         with:
           fetch-depth: 0
-
+      
       - name: Clone action definition
         uses: actions/checkout@v3
         with:
           repository: trafilea/s3-deploy
-          ref: master
+          ref: feat/brotli-compression
           fetch-depth: 0
           path: ./.github/action-s3-deploy
 
@@ -89,12 +93,13 @@ jobs:
         run: |
           aws s3 cp s3://$AWS_S3_BUCKET/$PROJECT_NAME/$PACKAGE_FILE $PACKAGE_FILE
           mkdir content
+          cp $PACKAGE_FILE content
           cd content
-          mkdir assets
-          cp ../$PACKAGE_FILE assets
-          cd assets
           unzip $PACKAGE_FILE
-          rm -f $PACKAGE_FILE README.md
+          mkdir -p ssr/${{ inputs.PACKAGE_VERSION }}/_next/
+          cp -r .next/static ssr/${{ inputs.PACKAGE_VERSION }}/_next
+          rm -rf .next
+          rm -f $PACKAGE_FILE
 
       - name: Configure AWS Credentials for Upload
         uses: aws-actions/configure-aws-credentials@v1-node16
@@ -105,14 +110,6 @@ jobs:
           aws-region: "${{ inputs.AWS_REGION }}"
           role-duration-seconds: 3600
 
-      - name: Delete old content
-        env:
-          PACKAGE_FILE: ${{ inputs.PACKAGE_NAME}}-${{ inputs.PACKAGE_VERSION }}.zip
-          AWS_S3_BUCKET: ${{ inputs.CDN_BUCKET  }}
-          PROJECT_NAME: ${{ inputs.PACKAGE_NAME }}
-        run: |
-          aws s3 rm --recursive s3://$AWS_S3_BUCKET/assets/
-
       - name: S3 Upload and Cloudfront Invalidation
         uses: ./.github/action-s3-deploy
         with:
@@ -120,7 +117,8 @@ jobs:
           bucket: ${{ inputs.CDN_BUCKET  }}
           bucket-region: us-east-1
           private: true
-          cache: ${{ inputs.CACHE_MAX_AGE }}
+          content-encoding: ${{ inputs.CONTENT_ENCODING }}
           dist-id: ${{ inputs.CLOUDFRONT_ID }}
-          invalidation: /assets
+          cache: ${{ inputs.CACHE_MAX_AGE }}
+          invalidation: /ssr
           delete-removed: false
