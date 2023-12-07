@@ -25,6 +25,10 @@ on:
         required: false
         type: string
         default: "31536000"
+      CONTENT_ENCODING:
+        required: false
+        type: string
+        default: "gzip"
       ENVIRONMENT_ACCOUNT_ID:
         required: true
         type: string
@@ -113,6 +117,7 @@ jobs:
           bucket: ${{ inputs.CDN_BUCKET  }}
           bucket-region: us-east-1
           private: true
+          content-encoding: ${{ inputs.CONTENT_ENCODING }}
           dist-id: ${{ inputs.CLOUDFRONT_ID }}
           cache: ${{ inputs.CACHE_MAX_AGE }}
           invalidation: /ssr
