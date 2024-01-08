@@ -44,7 +44,7 @@ jobs:
       
       - name: Read contents of environment file
         run: |
-          EnvironmentFileContents=$(yq -o=json eval variables-${{ github.event.inputs.ENVIRONMENT }}.yaml)
+          EnvironmentFileContents=$(yq -o=json eval variables-${{ github.event.inputs.ENVIRONMENT }}.yaml | jq -c)
           echo "EnvironmentFileContents=$EnvironmentFileContents" >> $GITHUB_ENV 
 
       - name: Repository Dispatch
