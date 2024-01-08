@@ -44,7 +44,8 @@ jobs:
       
       - name: Read contents of environment file
         run: |
-          EnvironmentFileContents=$(yq -o=json eval variables-${{ github.event.inputs.ENVIRONMENT }}.yaml | jq -c)
+          yq -o=json eval variables-${{ github.event.inputs.ENVIRONMENT }}.yaml | jq -c > contents.json
+          EnvironmentFileContents=$(cat contents.json)
           echo "EnvironmentFileContents=$EnvironmentFileContents" >> $GITHUB_ENV 
           echo $EnvironmentFileContents
 
