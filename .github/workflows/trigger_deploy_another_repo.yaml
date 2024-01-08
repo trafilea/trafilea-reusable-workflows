@@ -54,4 +54,4 @@ jobs:
           token: ${{ secrets.GH_WORKFLOW_TOKEN }}
           repository: trafilea/trafilea-services-infra
           event-type: deploy-ecs
-          client-payload: '{"appName":"${{ github.event.inputs.APP_NAME }}","environment":"${{ github.event.inputs.ENVIRONMENT }}","dockerImageTag":"${{ github.event.inputs.DOCKER_IMAGE_TAG }}","envVariables":"${{ env.EnvironmentFileContents }}"}'
+          client-payload: '{"appName":"${{ github.event.inputs.APP_NAME }}","environment":"${{ github.event.inputs.ENVIRONMENT }}","dockerImageTag":"${{ github.event.inputs.DOCKER_IMAGE_TAG }}","envVariables":${{ env.EnvironmentFileContents }}}'
