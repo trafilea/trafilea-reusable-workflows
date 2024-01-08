@@ -46,6 +46,7 @@ jobs:
         run: |
           EnvironmentFileContents=$(yq -o=json eval variables-${{ github.event.inputs.ENVIRONMENT }}.yaml | jq -c)
           echo "EnvironmentFileContents=$EnvironmentFileContents" >> $GITHUB_ENV 
+          echo $EnvironmentFileContents
 
       - name: Repository Dispatch
         uses: peter-evans/repository-dispatch@v2
