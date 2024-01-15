@@ -45,6 +45,16 @@ jobs:
           with:
            path: .
 
+        - name: Add & Commit
+          # You may pin to the exact commit or the version.
+          # uses: EndBug/add-and-commit@b5dec7ea7647ed6edf307ec828d3aeb6bca69f63
+          uses: EndBug/add-and-commit@v5.1.0
+          with:
+            # Arguments for the git add command
+            add: '.'
+            # The message for the commit
+            message: 'Add fmt files'
+
         - name: Do checkov check on files
           if: ${{ inputs.checkov }}
           uses: bridgecrewio/checkov-action@master
