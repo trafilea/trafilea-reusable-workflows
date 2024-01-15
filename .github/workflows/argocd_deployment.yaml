@@ -58,13 +58,13 @@ jobs:
           token: ${{ secrets.GH_WORKFLOW_TOKEN }}
       
       - name: Replace Image Tag
-        if: ${{ inputs.ENVIRONMENT != dev }}
+        if: ${{ inputs.ENVIRONMENT != 'dev' }}
         run: |
           OLD_TAG=$(cat $ENV/apps/microservices/$APP_NAME/$APP_NAME.yaml | grep tag: | awk '{print $2}')
           sed -i "s/tag: $OLD_TAG/tag: $IMAGE_TAG/g" $ENV/apps/microservices/$APP_NAME/$APP_NAME.yaml
       
       - name: Replace Image Tag - Refactor
-        if: ${{ inputs.ENVIRONMENT == dev }}
+        if: ${{ inputs.ENVIRONMENT == 'dev' }}
         run: |
           OLD_TAG=$(cat apps/overlays/$ENV/$APP_NAME/$APP_NAME.yaml | grep tag: | awk '{print $2}')
           sed -i "s/tag: $OLD_TAG/tag: $IMAGE_TAG/g" apps/overlays/$ENV/$APP_NAME/$APP_NAME.yaml
