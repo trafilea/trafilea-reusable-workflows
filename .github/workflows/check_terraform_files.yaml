@@ -7,6 +7,10 @@ on:
         required: false
         default: false
         type: boolean
+      add_tf_fmt:
+        required: false
+        default: false
+        type: boolean
       checkov:
         required: false
         default: false
@@ -38,6 +42,7 @@ jobs:
           uses: actions/checkout@v3.1.0
           with:
            fetch-depth: 0
+           ref: ${{ github.event.pull_request.head.ref }}
 
         - name: Check terraform format
           if: ${{ inputs.tf_fmt }}
