@@ -44,17 +44,17 @@ jobs:
            fetch-depth: 0
            ref: ${{ github.event.pull_request.head.ref }}
 
-        - name: Check terraform format
+        - name: Execute 'terraform fmt'
           if: ${{ inputs.tf_fmt }}
           uses: dflook/terraform-fmt@v1
           with:
            path: .
 
-        - name: Add & Commit Terraform fmt Changes
+        - name: Add & Commit 'terraform fmt' changes into PR
           uses: EndBug/add-and-commit@v9
           with:
             add: '.'
-            message: 'Add fmt files'
+            message: 'Add formatted terraform files.'
 
         - name: Render terraform docs inside the README.md and push changes back to PR branch
           uses: terraform-docs/gh-actions@v1.0.0
