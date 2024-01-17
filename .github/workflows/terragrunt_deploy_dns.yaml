@@ -73,7 +73,7 @@ jobs:
           aws-region: "${{ inputs.AWS_REGION }}"
 
       - name: Terragrunt Plan
-        run: terragrunt run-all plan --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
+        run: terragrunt run-all plan=false --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
         working-directory: ${{ github.workspace }}/terraform/domains/${{ inputs.DOMAIN }}/
 
       - name: Terragrunt Apply
