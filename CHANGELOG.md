@@ -2,6 +2,14 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [4.5.0] - 17/01/2024
+### Changed
+- Changed `deploy_terragrunt.yaml` - Added CLI Flag to avoid state locking in Terragrunt
+- Changed `terragrunt_test.yaml` - Added CLI Flag to avoid state locking in Terragrunt
+- Changed `terragrunt_test_dns.yaml` - Added CLI Flag to avoid state locking in Terragrunt
+- Changed `terragrunt_update_task_image.yaml` - Added CLI Flag to avoid state locking in Terragrunt
+- Changed `terragrunt_deploy_dns.yaml` - Added CLI Flag to avoid state locking in Terragrunt
+
 ## [4.4.1] - 30/11/2023
 ### Added
 - Changed `docker_build_and_push.yaml` - Added new input for specifying Dockerfile folder
