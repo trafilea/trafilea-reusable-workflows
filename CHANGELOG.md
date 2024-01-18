@@ -2,6 +2,10 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [4.6.0] - 18/01/2024
+### Changed
+- Changed `check_terraform_files.yaml` - Added steps to commit TFDocs and formatting files
+
 ## [4.5.0] - 17/01/2024
 ### Changed
 - Changed `deploy_terragrunt.yaml` - Added CLI Flag to avoid state locking in Terragrunt
