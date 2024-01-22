@@ -1,0 +1,130 @@
+name: Deploy Static Content
+on:
+  workflow_call:
+    inputs:
+      BUILDS_BUCKET:
+        required: true
+        type: string
+      AWS_REGION:
+        required: false
+        default: "us-east-1"
+        type: string
+      PACKAGE_NAME:
+        required: true
+        type: string
+      PACKAGE_VERSION:
+        required: true
+        type: string
+      CDN_BUCKET:
+        required: true
+        type: string
+      CLOUDFRONT_ID:
+        required: true
+        type: string
+      CACHE_MAX_AGE:
+        required: false
+        type: string
+        default: "31536000"
+      ENVIRONMENT_ACCOUNT_ID:
+        required: true
+        type: string
+
+    secrets:
+      OPS_AWS_ACCESS_KEY_ID:
+        required: true
+      OPS_AWS_SECRET_ACCESS_KEY:
+        required: true
+      GH_WORKFLOW_TOKEN:
+        required: true
+
+jobs:
+  check_org:
+    name: Check Caller
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check the calling organization
+        if: ${{ github.repository_owner != 'trafilea' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('This reusable workflow can only be used by Trafilea.')
+
+  deploy:
+    needs: check_org
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Clone action definition
+        uses: actions/checkout@v3
+        with:
+          repository: trafilea/s3-deploy
+          ref: feat/brotli-compression
+          fetch-depth: 0
+          path: ./.github/action-s3-deploy
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY }}
+          aws-region: "${{ inputs.AWS_REGION }}"
+
+      - name: Retrieve and Unzip Package
+        env:
+          PACKAGE_FILE: ${{ inputs.PACKAGE_NAME}}-${{ inputs.PACKAGE_VERSION }}.zip
+          AWS_S3_BUCKET: ${{ inputs.BUILDS_BUCKET }}
+          PROJECT_NAME: ${{ inputs.PACKAGE_NAME }}
+        run: |
+          aws s3 cp s3://$AWS_S3_BUCKET/$PROJECT_NAME/$PACKAGE_FILE $PACKAGE_FILE
+          mkdir -p content_br/ssr/${{ inputs.PACKAGE_VERSION }}/_next/br
+          mkdir -p content_gzip/ssr/${{ inputs.PACKAGE_VERSION }}/_next/gzip
+          unzip $PACKAGE_FILE
+          cp -r .next/static content_br/ssr/${{ inputs.PACKAGE_VERSION }}/_next/br
+          cp -r .next/static content_gzip/ssr/${{ inputs.PACKAGE_VERSION }}/_next/gzip
+          rm -rf .next
+          rm -f $PACKAGE_FILE
+
+      - name: Configure AWS Credentials for Upload
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY  }}
+          role-to-assume: arn:aws:iam::${{ inputs.ENVIRONMENT_ACCOUNT_ID }}:role/terraform-admin-role
+          aws-region: "${{ inputs.AWS_REGION }}"
+          role-duration-seconds: 3600
+
+      - name: S3 Upload and Cloudfront Invalidation for Gzip
+        uses: ./.github/action-s3-deploy
+        with:
+          folder: content_gzip
+          bucket: ${{ inputs.CDN_BUCKET  }}
+          bucket-region: us-east-1
+          private: true
+          content-encoding: gzip
+          dist-id: ${{ inputs.CLOUDFRONT_ID }}
+          cache: ${{ inputs.CACHE_MAX_AGE }}
+          invalidation: /ssr
+          delete-removed: false
+
+      - name: S3 Upload and Cloudfront Invalidation for Brotli
+        uses: ./.github/action-s3-deploy
+        with:
+          folder: content_br
+          bucket: ${{ inputs.CDN_BUCKET  }}
+          bucket-region: us-east-1
+          private: true
+          content-encoding: br
+          dist-id: ${{ inputs.CLOUDFRONT_ID }}
+          cache: ${{ inputs.CACHE_MAX_AGE }}
+          invalidation: /ssr
+          delete-removed: false
