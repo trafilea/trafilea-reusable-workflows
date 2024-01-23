@@ -87,10 +87,10 @@ jobs:
         run: |
           aws s3 cp s3://$AWS_S3_BUCKET/$PROJECT_NAME/$PACKAGE_FILE $PACKAGE_FILE
           mkdir -p content_br/ssr/${{ inputs.PACKAGE_VERSION }}/_next/br
-          mkdir -p content_gzip/ssr/${{ inputs.PACKAGE_VERSION }}/_next/gzip
+          mkdir -p content_gzip/ssr/${{ inputs.PACKAGE_VERSION }}/_next
           unzip $PACKAGE_FILE
           cp -r .next/static content_br/ssr/${{ inputs.PACKAGE_VERSION }}/_next/br
-          cp -r .next/static content_gzip/ssr/${{ inputs.PACKAGE_VERSION }}/_next/gzip
+          cp -r .next/static content_gzip/ssr/${{ inputs.PACKAGE_VERSION }}/_next
           rm -rf .next
           rm -f $PACKAGE_FILE
 
