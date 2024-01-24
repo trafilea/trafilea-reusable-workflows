@@ -11,6 +11,10 @@ on:
         required: false
         default: false
         type: boolean
+      render_readme:
+        required: false
+        default: false
+        type: boolean        
       checkov:
         required: false
         default: false
@@ -51,12 +55,14 @@ jobs:
            path: .
 
         - name: Add & Commit 'terraform fmt' changes into PR
+          if: ${{ inputs.add_tf_fmt }}
           uses: EndBug/add-and-commit@v9
           with:
             add: '.'
             message: 'Add formatted terraform files.'
 
         - name: Render terraform docs inside the README.md and push changes back to PR branch
+          if: ${{ inputs.render_readme }}
           uses: terraform-docs/gh-actions@v1.0.0
           with:
             find-dir: .

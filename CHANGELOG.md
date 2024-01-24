@@ -2,6 +2,10 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [4.6.2] - 24/01/2024
+### Changed
+- Changed `check_terraform_files.yaml` - Added boolean inputs for 'add_tf_fmt' & 'render_readme', so they can be enabled/disabled from 'caller-workflows'.
+
 ## [4.6.1] - 19/01/2024
 ### Changed
 - Changed `docker_release.yaml` - Added DOCKERFILE_FOLDER input to support various folder arrangements
