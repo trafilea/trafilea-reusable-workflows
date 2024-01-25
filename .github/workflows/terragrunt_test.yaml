@@ -66,6 +66,12 @@ jobs:
           git config --local --remove-section http."https://github.com/"
           git config --global url."https://foo:${{ secrets.GH_WORKFLOW_TOKEN }}@github.com/trafilea".insteadOf "https://github.com/trafilea"
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
+          aws-region: "${{ inputs.AWS_REGION }}"
+
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v1
         with:
@@ -76,11 +82,6 @@ jobs:
         uses: peter-murray/terragrunt-github-action@v1.0.0
         with:
           terragrunt_version: 0.36.12
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
-          aws-region: "${{ inputs.AWS_REGION }}"
 
       - name: Terragrunt Plan
         run: terragrunt run-all plan -lock=false --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
