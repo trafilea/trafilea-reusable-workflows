@@ -25,10 +25,6 @@ on:
         type: string
 
     secrets:
-      OPS_AWS_ACCESS_KEY_ID:
-        required: true
-      OPS_AWS_SECRET_ACCESS_KEY:
-        required: true
       GH_WORKFLOW_TOKEN:
         required: true
       TE_DD_API_KEY:
@@ -78,17 +74,16 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
-          aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY  }}
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
           aws-region: "${{ inputs.AWS_REGION }}"
       
-      - name: Clone action definition
-        uses: actions/checkout@v3
-        with:
-          repository: teracloud-io/check-ecr-image-exists-action
-          ref: main
-          fetch-depth: 0
-          path: ./.github/action-check-image-exists
+      #- name: Clone action definition
+      #  uses: actions/checkout@v3
+      #  with:
+      #    repository: teracloud-io/check-ecr-image-exists-action
+      #    ref: main
+      #    fetch-depth: 0
+      #    path: ./.github/action-check-image-exists
 
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v1
