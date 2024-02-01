@@ -63,7 +63,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -72,17 +72,13 @@ jobs:
           git config --global url."https://foo:${{ secrets.GH_WORKFLOW_TOKEN }}@github.com/trafilea".insteadOf "https://github.com/trafilea"
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
           aws-region: "${{ inputs.AWS_REGION }}"
 
-      - name: Sts GetCallerIdentity
-        run: |
-          aws sts get-caller-identity
-
       - name: Clone action definition
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: teracloud-io/check-ecr-image-exists-action
           ref: main
@@ -90,7 +86,7 @@ jobs:
           path: ./.github/action-check-image-exists
 
       - name: Install Terraform
-        uses: hashicorp/setup-terraform@v1
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
           terraform_version: 1.2.9
