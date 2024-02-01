@@ -81,13 +81,13 @@ jobs:
         run: |
           aws sts get-caller-identity
 
-      #- name: Clone action definition
-      #  uses: actions/checkout@v3
-      #  with:
-      #    repository: teracloud-io/check-ecr-image-exists-action
-      #    ref: main
-      #    fetch-depth: 0
-      #    path: ./.github/action-check-image-exists
+      - name: Clone action definition
+        uses: actions/checkout@v3
+        with:
+          repository: teracloud-io/check-ecr-image-exists-action
+          ref: main
+          fetch-depth: 0
+          path: ./.github/action-check-image-exists
 
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v1
