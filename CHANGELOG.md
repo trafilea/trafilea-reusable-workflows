@@ -2,6 +2,11 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [4.7.0] - 02/02/2024
+### Changed
+- Changed `deploy_terragrunt.yaml` - Switched AWS Keys Auth to OIDC Role Auth and updated 'checkout' & 'setup-terraform' actions versions.
+- Changed `terragrunt_test.yaml` - Switched AWS Keys Auth to OIDC Role Auth and updated 'checkout' & 'setup-terraform' actions versions.
+
 ## [4.6.2] - 24/01/2024
 ### Changed
 - Changed `check_terraform_files.yaml` - Added boolean inputs for 'add_tf_fmt' & 'render_readme', so they can be enabled/disabled from 'caller-workflows'.
