@@ -24,10 +24,6 @@ on:
         type: string
 
     secrets:
-      OPS_AWS_ACCESS_KEY_ID:
-        required: true
-      OPS_AWS_SECRET_ACCESS_KEY:
-        required: true
       GH_WORKFLOW_TOKEN:
         required: true
       DB_PASSWORD:
@@ -60,7 +56,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -68,8 +64,14 @@ jobs:
           git config --local --remove-section http."https://github.com/"
           git config --global url."https://foo:${{ secrets.GH_WORKFLOW_TOKEN }}@github.com/trafilea".insteadOf "https://github.com/trafilea"
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
+          aws-region: "${{ inputs.AWS_REGION }}"
+
       - name: Install Terraform
-        uses: hashicorp/setup-terraform@v1
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
           terraform_version: 1.2.9
@@ -78,12 +80,6 @@ jobs:
         uses: peter-murray/terragrunt-github-action@v1.0.0
         with:
           terragrunt_version: 0.36.12
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY  }}
-          aws-region: "${{ inputs.AWS_REGION }}"
 
       - name: Terragrunt Plan
         run: terragrunt run-all plan -lock=false --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
