@@ -48,6 +48,8 @@ jobs:
     steps:
       - uses: theappnest/terraform-monorepo-action@master
         id: directories
+        with:
+          monitored: '.hcl'
       - run: echo ${{ steps.directories.outputs.modules }}
     outputs:
       dirs: ${{ steps.directories.outputs.modules }}
