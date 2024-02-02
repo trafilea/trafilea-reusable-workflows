@@ -43,6 +43,7 @@ jobs:
             core.setFailed('This reusable workflow can only be used by Trafilea.')
 
   directories:
+    needs: check_org
     name: "Directory-changes"
     runs-on: ubuntu-latest
     steps:
@@ -55,7 +56,7 @@ jobs:
       dirs: ${{ steps.directories.outputs.modules }}
 
   deploy:
-    needs: check_org
+    needs: directories
     name: Test Infra
     runs-on: ubuntu-latest
     strategy:
