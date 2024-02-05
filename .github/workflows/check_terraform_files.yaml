@@ -14,14 +14,6 @@ on:
       render_readme:
         required: false
         default: false
-        type: boolean        
-      checkov:
-        required: false
-        default: false
-        type: boolean
-      tfsec:
-        required: false
-        default: false
         type: boolean
 
 jobs:
@@ -85,14 +77,3 @@ jobs:
             output-file: README.md
             output-method: inject
             git-push: "true"
-
-        - name: Do checkov check on files
-          if: ${{ inputs.checkov }}
-          uses: bridgecrewio/checkov-action@master
-          with:
-            framework: terraform
-            quiet: true
-
-        - name: Do TFSec check on files
-          if: ${{ inputs.tfsec }}
-          uses: aquasecurity/tfsec-action@v1.0.0
