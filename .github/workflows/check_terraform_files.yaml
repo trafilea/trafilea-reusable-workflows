@@ -37,6 +37,19 @@ jobs:
             script: |
               core.setFailed('This reusable workflow can only be used by Trafilea.')
 
+    directories:
+      needs: check_org
+      name: "Directory-changes"
+      runs-on: ubuntu-latest
+      steps:
+        - uses: theappnest/terraform-monorepo-action@master
+          id: directories
+          with:
+            monitored: '.tf'
+        - run: echo ${{ steps.directories.outputs.modules }}
+      outputs:
+        dirs: ${{ steps.directories.outputs.modules }}
+
     check_files:
       needs: check_org
       runs-on: ubuntu-latest
