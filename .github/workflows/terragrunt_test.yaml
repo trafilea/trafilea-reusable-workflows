@@ -94,4 +94,5 @@ jobs:
 
       - name: Terragrunt Plan
         run: terragrunt plan -lock=false --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
-        working-directory: ${{ matrix.directories }}
+        if: contains($${ matrix.directories }}, 'terraform/core/environment/ops/**')
+        working-directory: contains($${ matrix.directories }}, 'terraform/core/environment/ops/**')
