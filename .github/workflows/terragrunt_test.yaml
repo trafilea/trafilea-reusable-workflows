@@ -18,10 +18,6 @@ on:
         required: false
         default: some-ver
         type: string
-      INFRA_PATH:
-        required: false
-        default: terraform
-        type: string
 
     secrets:
       GH_WORKFLOW_TOKEN:
@@ -99,4 +95,3 @@ jobs:
       - name: Terragrunt Plan
         run: terragrunt plan -lock=false --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
         working-directory: ${{ matrix.directories }}
-        #working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
