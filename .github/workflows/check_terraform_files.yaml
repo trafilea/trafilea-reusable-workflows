@@ -54,6 +54,9 @@ jobs:
       needs: check_org
       runs-on: ubuntu-latest
       name: Do checks on the terraform files
+      strategy:
+        matrix:
+          directories: ${{ fromJson(needs.directories.outputs.dirs) }}
       steps:
         - name: Checkout code
           uses: actions/checkout@v3.1.0
@@ -65,7 +68,7 @@ jobs:
           if: ${{ inputs.tf_fmt }}
           uses: dflook/terraform-fmt@v1
           with:
-           path: .
+           path: ${{ matrix.directories }}
 
         - name: Add & Commit 'terraform fmt' changes into PR
           if: ${{ inputs.add_tf_fmt }}
