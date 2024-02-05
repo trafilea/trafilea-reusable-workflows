@@ -73,7 +73,7 @@ jobs:
           if: ${{ inputs.render_readme }}
           uses: terraform-docs/gh-actions@v1.0.0
           with:
-            working-dir: terraform-modules/$${{ matrix.directories }}
+            find-dir: ${{ matrix.directories }}
             output-file: README.md
             output-method: inject
             git-push: "true"
