@@ -51,7 +51,7 @@ jobs:
         dirs: ${{ steps.directories.outputs.modules }}
 
     check_files:
-      needs: check_org
+      needs: directories
       runs-on: ubuntu-latest
       name: Do checks on the terraform files
       strategy:
