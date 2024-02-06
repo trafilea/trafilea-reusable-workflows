@@ -14,14 +14,6 @@ on:
       render_readme:
         required: false
         default: false
-        type: boolean        
-      checkov:
-        required: false
-        default: false
-        type: boolean
-      tfsec:
-        required: false
-        default: false
         type: boolean
 
 jobs:
@@ -37,13 +29,29 @@ jobs:
             script: |
               core.setFailed('This reusable workflow can only be used by Trafilea.')
 
-    check_files:
+    directories:
       needs: check_org
+      name: "Directory-changes"
+      runs-on: ubuntu-latest
+      steps:
+        - uses: theappnest/terraform-monorepo-action@master
+          id: directories
+          with:
+            monitored: '.tf'
+        - run: echo ${{ steps.directories.outputs.modules }}
+      outputs:
+        dirs: ${{ steps.directories.outputs.modules }}
+
+    check_files:
+      needs: directories
       runs-on: ubuntu-latest
       name: Do checks on the terraform files
+      strategy:
+        matrix:
+          directories: ${{ fromJson(needs.directories.outputs.dirs) }}
       steps:
         - name: Checkout code
-          uses: actions/checkout@v3.1.0
+          uses: actions/checkout@v4
           with:
            fetch-depth: 0
            ref: ${{ github.event.pull_request.head.ref }}
@@ -52,7 +60,7 @@ jobs:
           if: ${{ inputs.tf_fmt }}
           uses: dflook/terraform-fmt@v1
           with:
-           path: .
+           path: ${{ matrix.directories }}
 
         - name: Add & Commit 'terraform fmt' changes into PR
           if: ${{ inputs.add_tf_fmt }}
@@ -65,18 +73,7 @@ jobs:
           if: ${{ inputs.render_readme }}
           uses: terraform-docs/gh-actions@v1.0.0
           with:
-            find-dir: .
+            find-dir: ${{ matrix.directories }}
             output-file: README.md
             output-method: inject
             git-push: "true"
-
-        - name: Do checkov check on files
-          if: ${{ inputs.checkov }}
-          uses: bridgecrewio/checkov-action@master
-          with:
-            framework: terraform
-            quiet: true
-
-        - name: Do TFSec check on files
-          if: ${{ inputs.tfsec }}
-          uses: aquasecurity/tfsec-action@v1.0.0
