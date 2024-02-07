@@ -78,6 +78,8 @@ jobs:
       ENV: ${{ inputs.ENVIRONMENT }}
       DD_API_KEY: ${{ secrets.TE_DD_API_KEY }}
       DD_APP_KEY: ${{ secrets.TE_DD_APP_KEY }}
+      GITHUB_TOKEN: ${{ secrets.GH_WORKFLOW_TOKEN }}
+      TF_VAR_datadog_api_key: ${{ secrets.TE_DD_API_KEY }}
 
     steps:
       - name: Checkout code
