@@ -3,9 +3,6 @@ name: Terragrunt
 on:
   workflow_call:
     inputs:
-      APP_NAME:
-        required: true
-        type: string
       ENVIRONMENT:
         required: true
         type: string
@@ -18,10 +15,6 @@ on:
         type: string
       PACKAGE_VERSION:
         required: false
-        type: string
-      INFRA_PATH:
-        required: false
-        default: terraform
         type: string
 
     secrets:
