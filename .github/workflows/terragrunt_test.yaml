@@ -18,6 +18,10 @@ on:
         required: false
         default: some-ver
         type: string
+      INFRA_PATH:
+        required: false
+        default: terraform
+        type: string
 
     secrets:
       GH_WORKFLOW_TOKEN:
@@ -38,26 +42,11 @@ jobs:
           script: |
             core.setFailed('This reusable workflow can only be used by Trafilea.')
 
-  directories:
-    needs: check_org
-    name: "Directory-changes"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: theappnest/terraform-monorepo-action@master
-        id: directories
-        with:
-          monitored: '.hcl'
-      - run: echo ${{ steps.directories.outputs.modules }}
-    outputs:
-      dirs: ${{ steps.directories.outputs.modules }}
-
   deploy:
-    needs: directories
+    needs: check_org
     name: Test Infra
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        directories: ${{ fromJson(needs.directories.outputs.dirs) }}
+
     env:
       AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
       TF_VAR_docker_image_tag: ${{ inputs.DOCKER_IMAGE_TAG }}
@@ -93,5 +82,5 @@ jobs:
           terragrunt_version: 0.36.12
 
       - name: Terragrunt Plan
-        run: terragrunt plan -lock=false --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
-        working-directory: ${{ matrix.directories }}
+        run: terragrunt run-all plan -lock=false --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
+        working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
