@@ -119,5 +119,5 @@ jobs:
 
       - name: Terragrunt Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terragrunt apply --terragrunt-non-interactive --terragrunt-include-external-dependencies
+        run: terragrunt apply --auto-approve --terragrunt-non-interactive --terragrunt-include-external-dependencies
         working-directory: ${{ github.workspace }}/${{ matrix.targets }}
