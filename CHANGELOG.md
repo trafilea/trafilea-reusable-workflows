@@ -2,6 +2,10 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [4.9.0] - 07/02/2024
+### Added
+- Added `terragrunt.yaml` workflow for both running apply and plan over single terragrunt module directories.
+
 ## [4.8.0] - 06/02/2024
 ### Changed
 - Changed `check_terraform_files.yaml` - Removed tf_sec and checkov steps which weren't utilized. Added 'directories' step and matrix strategy.
