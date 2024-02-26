@@ -74,10 +74,14 @@ jobs:
           aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ inputs.AWS_REGION }}
+          role-to-assume: arn:aws:iam::523628064160:role/terraform-admin-role
+          role-session-name: GitHubActions
 
       - name: Login to Amazon ECR
         id: login-container-registry
         uses: aws-actions/amazon-ecr-login@v1
+        with:
+          registries: "523628064160"
 
       - name: Build and Push Container Image
         id: build-container-image
