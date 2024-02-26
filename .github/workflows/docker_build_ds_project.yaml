@@ -76,6 +76,7 @@ jobs:
           aws-region: ${{ inputs.AWS_REGION }}
           role-to-assume: arn:aws:iam::523628064160:role/terraform-admin-role
           role-session-name: GitHubActions
+          role-duration-seconds: 300
 
       - name: Login to Amazon ECR
         id: login-container-registry
