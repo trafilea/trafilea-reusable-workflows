@@ -2,6 +2,10 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [4.9.1] - 26/02/2024
+### Added
+- Added `docker_build_ds_project.yaml` workflow for building and uploading Docker images to the DS ECR Account
+
 ## [4.9.0] - 07/02/2024
 ### Added
 - Added `terragrunt.yaml` workflow for both running apply and plan over single terragrunt module directories.

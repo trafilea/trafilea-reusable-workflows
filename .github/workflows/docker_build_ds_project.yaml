@@ -1,0 +1,94 @@
+name: Build and push a Docker image to ECR
+
+on:
+  workflow_call:
+    inputs:
+      ECR_NAME:
+        required: true
+        type: string
+      AWS_REGION:
+        required: false
+        type: string
+        default: "us-east-1"
+      DOCKER_BUILD_ARGS:
+        required: false
+        type: string
+        default: "--progress plain --file Dockerfile"
+      DOCKERFILE_FOLDER:
+        required: false
+        type: string
+        default: '.'
+      IMAGE_TAG:
+        required: true
+        type: string
+
+    outputs:
+      image_tag:
+        description: Image tag created on the workflow
+        value: ${{ jobs.build_n_push.outputs.image_tag }}
+
+    secrets:
+      OPS_AWS_ACCESS_KEY_ID:
+        required: true
+      OPS_AWS_SECRET_ACCESS_KEY:
+        required: true
+      GH_WORKFLOW_TOKEN:
+        required: true
+
+
+jobs:
+  check_org:
+    name: Check Caller
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check the calling organization
+        if: ${{ github.repository_owner != 'trafilea' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('This reusable workflow can only be used by Trafilea.')
+
+
+  build_n_push:
+    needs: check_org
+    name: Build and Push to ECR
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.set-image-tag.outputs.image_tag }}
+      latest_tag: ${{ steps.set-latest-tag.outputs.latest_tag }}
+
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3.1.0
+        with:
+          submodules: true
+          fetch-depth: 0
+          token: ${{ secrets.GH_WORKFLOW_TOKEN }}
+
+      - name: Configure AWS Credentials
+        id: configure-credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-container-registry
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and Push Container Image
+        id: build-container-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-container-registry.outputs.registry }}
+          ECR_REPOSITORY: ${{ inputs.ECR_NAME }}
+          DOCKERFILE_FOLDER: ${{ inputs.DOCKERFILE_FOLDER }}
+          IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
+        run: |
+          cd $DOCKERFILE_FOLDER
+          docker build . \
+            ${{ inputs.DOCKER_BUILD_ARGS }} \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
