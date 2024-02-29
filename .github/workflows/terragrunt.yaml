@@ -57,7 +57,8 @@ jobs:
 
       - id: filter-directories
         run: |
-          output_json=$(./.github/workflows/deploy_script.sh ${{ inputs.ENVIRONMENT }})
+          pwd
+          output_json=$(.github/workflows/deploy_script.sh ${{ inputs.ENVIRONMENT }})
           echo "json_matrix=$output_json" >> "$GITHUB_OUTPUT"
           echo "$output_json"
       
