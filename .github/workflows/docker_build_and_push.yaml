@@ -27,15 +27,6 @@ on:
         description: Latest tag created on the workflow
         value: ${{ jobs.build_n_push.outputs.latest_tag }}
 
-    secrets:
-      OPS_AWS_ACCESS_KEY_ID:
-        required: true
-      OPS_AWS_SECRET_ACCESS_KEY:
-        required: true
-      GH_WORKFLOW_TOKEN:
-        required: true
-
-
 jobs:
   check_org:
     name: Check Caller
@@ -61,11 +52,9 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v4
         with:
-          submodules: true
           fetch-depth: 0
-          token: ${{ secrets.GH_WORKFLOW_TOKEN }}
 
       - name: Set Image tag
         id: set-image-tag
@@ -80,16 +69,14 @@ jobs:
           if [ ${{ github.ref }}  == 'refs/heads/develop' ]; then echo "latest_tag=latest" >> $GITHUB_OUTPUT; else echo "latest_tag=latest-staging" >> $GITHUB_OUTPUT; fi
 
       - name: Configure AWS Credentials
-        id: configure-credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ inputs.AWS_REGION }}
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
+          aws-region: "${{ inputs.AWS_REGION }}"
 
       - name: Login to Amazon ECR
         id: login-container-registry
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and Push Container Image
         id: build-container-image
