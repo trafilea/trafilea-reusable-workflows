@@ -23,6 +23,14 @@ on:
         required: false
         default: terraform
         type: string
+      TERRAFORM_VERSION:
+        required: false
+        type: string
+        default: 1.2.9
+      TERRAGRUNT_VERSION:
+        required: false
+        type: string
+        default: 0.36.12  
 
     secrets:
       GH_WORKFLOW_TOKEN:
@@ -60,7 +68,8 @@ jobs:
       ENV: ${{ inputs.ENVIRONMENT }}
       DD_API_KEY: ${{ secrets.TE_DD_API_KEY }}
       DD_APP_KEY: ${{ secrets.TE_DD_APP_KEY }}
-
+      TERRAFORM_VERSION: ${{ inputs.TERRAFORM_VERSION }}
+      TERRAGRUNT_VERSION: ${{ inputs.TERRAGRUNT_VERSION }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -89,18 +98,20 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
-          terraform_version: 1.2.9
+          terraform_version: ${{ inputs.TERRAFORM_VERSION }}
 
       - name: Install Terragrunt
         uses: peter-murray/terragrunt-github-action@v1.0.0
         with:
-          terragrunt_version: 0.36.12
+          terragrunt_version: ${{ inputs.TERRAGRUNT_VERSION }}
 
       - name: Terragrunt Plan
+        if: github.ref == 'refs/heads/master' && github.event_name == 'pull_request'
         run: terragrunt run-all plan -lock=false --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
         working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
 
       - name: Terragrunt Apply
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         run: terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color
         working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
 
