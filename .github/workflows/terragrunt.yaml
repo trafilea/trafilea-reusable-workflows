@@ -17,7 +17,7 @@ on:
         required: false
         type: string
         default: 0.36.12
-      TERRRAFORM_VERSION:
+      TERRAFORM_VERSION:
         required: false
         type: string
         default: 1.2.9
