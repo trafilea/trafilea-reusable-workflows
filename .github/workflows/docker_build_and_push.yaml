@@ -18,6 +18,10 @@ on:
         required: false
         type: string
         default: '.'
+      LAMBDA_ARN:
+        required: false
+        type: string
+        default: 'arn:aws:lambda:us-east-1:856482786474:function:shaperbox-lambda'
 
     outputs:
       image_tag:
@@ -48,7 +52,6 @@ jobs:
     outputs:
       image_tag: ${{ steps.set-image-tag.outputs.image_tag }}
       latest_tag: ${{ steps.set-latest-tag.outputs.latest_tag }}
-
 
     steps:
       - name: Checkout code
@@ -94,3 +97,13 @@ jobs:
             $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
+      
+      - name: Update Lambda Image URI to the latest one
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        id: update-lambda-image
+        env:
+          ECR_REGISTRY: ${{ login-container-registry.outputs.registry }}
+          ECR_REPOSITORY: ${{ inputs.APP_NAME }}
+          LAMBDA_ARN: ${{ inputs.LAMBDA_ARN }}
+        run: |
+          aws lambda update-function-code --function-name $${{ inputs.LAMBDA_ARN }} --image-uri $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
