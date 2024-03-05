@@ -102,7 +102,7 @@ jobs:
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         id: update-lambda-image
         env:
-          ECR_REGISTRY: ${{ login-container-registry.outputs.registry }}
+          ECR_REGISTRY: ${{ steps.login-container-registry.outputs.registry }}
           ECR_REPOSITORY: ${{ inputs.APP_NAME }}
           LAMBDA_ARN: ${{ inputs.LAMBDA_ARN }}
         run: |
