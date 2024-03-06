@@ -101,7 +101,7 @@ jobs:
           terraform_version: ${{ inputs.TERRAFORM_VERSION }}
 
       - name: Install Terragrunt
-        uses: peter-murray/terragrunt-github-action@v1.0.0
+        uses: autero1/action-terragrunt@v3.0.2
         with:
           terragrunt-version: ${{ inputs.TERRAGRUNT_VERSION }}
 
