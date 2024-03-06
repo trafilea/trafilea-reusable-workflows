@@ -106,12 +106,10 @@ jobs:
           terragrunt-version: ${{ inputs.TERRAGRUNT_VERSION }}
 
       - name: Terragrunt Plan
-        if: github.ref == 'refs/heads/master' && github.event_name == 'pull_request'
         run: terragrunt run-all plan -lock=false --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
         working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
 
       - name: Terragrunt Apply
-        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         run: terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color
         working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
 
