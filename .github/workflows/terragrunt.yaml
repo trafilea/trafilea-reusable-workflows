@@ -107,7 +107,7 @@ jobs:
       - name: Install Terragrunt
         uses: autero1/action-terragrunt@v3.0.2
         with:
-          terragrunt_version: ${{ inputs.TERRAGRUNT_VERSION }}
+          terragrunt-version: ${{ inputs.TERRAGRUNT_VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Terragrunt Plan
