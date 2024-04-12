@@ -108,14 +108,6 @@ jobs:
       - name: Update Lambda image uri
         run: |
           aws lambda update-function-code --function-name arn:aws:lambda:{{ inputs.AWS_REGION }}:${{ inputs.ACCOUNT_ID }}:function:${{ inputs.APP_NAME }} --image-uri 762869752790.dkr.ecr.us-east-1.amazonaws.com/${{ inputs.APP_NAME }}:${{ inputs.PACKAGE_VERSION }}
-        
-      #- name: Terragrunt Plan
-      #  run: terragrunt run-all plan -lock=false --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
-      #  working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
-#
-      #- name: Terragrunt Apply
-      #  run: terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color
-      #  working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
 
       - name: Datadog
         uses: masci/datadog@v1
