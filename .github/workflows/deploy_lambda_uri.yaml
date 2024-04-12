@@ -19,18 +19,7 @@ on:
       PACKAGE_VERSION:
         required: false
         type: string
-      INFRA_PATH:
-        required: false
-        default: terraform
-        type: string
-      TERRAFORM_VERSION:
-        required: false
-        type: string
-        default: 1.2.9
-      TERRAGRUNT_VERSION:
-        required: false
-        type: string
-        default: 0.36.12  
+
 
     secrets:
       GH_WORKFLOW_TOKEN:
@@ -68,8 +57,7 @@ jobs:
       ENV: ${{ inputs.ENVIRONMENT }}
       DD_API_KEY: ${{ secrets.TE_DD_API_KEY }}
       DD_APP_KEY: ${{ secrets.TE_DD_APP_KEY }}
-      TERRAFORM_VERSION: ${{ inputs.TERRAFORM_VERSION }}
-      TERRAGRUNT_VERSION: ${{ inputs.TERRAGRUNT_VERSION }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -96,7 +84,7 @@ jobs:
 
       - name: Update Lambda image uri
         run: |
-          aws lambda update-function-code --function-name arn:aws:lambda:{{ inputs.AWS_REGION }}:${{ inputs.ACCOUNT_ID }}:function:${{ inputs.APP_NAME }} --image-uri 762869752790.dkr.ecr.us-east-1.amazonaws.com/${{ inputs.APP_NAME }}:${{ inputs.PACKAGE_VERSION }}
+          aws lambda update-function-code --function-name arn:aws:lambda:us-east-1:${{ inputs.ACCOUNT_ID }}:function:${{ inputs.APP_NAME }} --image-uri 762869752790.dkr.ecr.us-east-1.amazonaws.com/${{ inputs.APP_NAME }}:${{ inputs.PACKAGE_VERSION }}
 
       - name: Datadog
         uses: masci/datadog@v1
