@@ -19,6 +19,9 @@ on:
       PACKAGE_VERSION:
         required: false
         type: string
+      ACCOUNT_ID:
+        required: false
+        type: number
 
 
     secrets:
