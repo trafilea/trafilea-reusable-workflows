@@ -1,4 +1,4 @@
-name: Deploy using Terragrunt
+name: Update Lambda Image URI
 
 on:
   workflow_call:
@@ -93,17 +93,6 @@ jobs:
           ref: main
           fetch-depth: 0
           path: ./.github/action-check-image-exists
-
-      - name: Install Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
-          terraform_version: ${{ inputs.TERRAFORM_VERSION }}
-
-      - name: Install Terragrunt
-        uses: autero1/action-terragrunt@v3.0.2
-        with:
-          terragrunt-version: ${{ inputs.TERRAGRUNT_VERSION }}
 
       - name: Update Lambda image uri
         run: |
