@@ -6,6 +6,9 @@ on:
       ECR_NAME:
         required: true
         type: string
+      ECR_REGISTRY:
+        required: true
+        type: string
       AWS_REGION:
         required: false
         type: string
@@ -27,15 +30,6 @@ on:
         description: Image tag created on the workflow
         value: ${{ jobs.build_n_push.outputs.image_tag }}
 
-    secrets:
-      OPS_AWS_ACCESS_KEY_ID:
-        required: true
-      OPS_AWS_SECRET_ACCESS_KEY:
-        required: true
-      GH_WORKFLOW_TOKEN:
-        required: true
-
-
 jobs:
   check_org:
     name: Check Caller
@@ -49,7 +43,6 @@ jobs:
           script: |
             core.setFailed('This reusable workflow can only be used by Trafilea.')
 
-
   build_n_push:
     needs: check_org
     name: Build and Push to ECR
@@ -61,28 +54,21 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v4
         with:
-          submodules: true
           fetch-depth: 0
-          token: ${{ secrets.GH_WORKFLOW_TOKEN }}
 
       - name: Configure AWS Credentials
-        id: configure-credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ inputs.AWS_REGION }}
-          role-to-assume: arn:aws:iam::523628064160:role/terraform-admin-role
-          role-session-name: GitHubActions
-          role-duration-seconds: 900
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
+          aws-region: "${{ inputs.AWS_REGION }}"
 
       - name: Login to Amazon ECR
         id: login-container-registry
         uses: aws-actions/amazon-ecr-login@v2
         with:
-          registries: "523628064160"
+          registries: ${{ inputs.ECR_REGISTRY }}
 
       - name: Build and Push Container Image
         id: build-container-image
