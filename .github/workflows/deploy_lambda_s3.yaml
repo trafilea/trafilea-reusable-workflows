@@ -93,10 +93,7 @@ jobs:
 
       - name: Update Lambda image uri
         run: |
-          aws lambda update-function-code \                                            
-              --function-name arn:aws:lambda:us-east-1:${{ inputs.ACCOUNT_ID }}:function:${{ inputs.APP_NAME }} \
-              --s3-bucket ${{ inputs.S3_BUCKET }} \
-              --s3-key ${{ inputs.S3_KEY }}/${{ inputs.PACKAGE_VERSION }}.zip
+          aws lambda update-function-code --function-name arn:aws:lambda:us-east-1:${{ inputs.ACCOUNT_ID }}:function:${{ inputs.APP_NAME }} --s3-bucket ${{ inputs.S3_BUCKET }} --s3-key ${{ inputs.S3_KEY }}/${{ inputs.PACKAGE_VERSION }}.zip              
 
       - name: Datadog
         uses: masci/datadog@v1
