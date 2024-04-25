@@ -1,0 +1,114 @@
+name: Update Lambda Image URI
+
+on:
+  workflow_call:
+    inputs:
+      APP_NAME:
+        required: true
+        type: string
+      ENVIRONMENT:
+        required: true
+        type: string
+      AWS_REGION:
+        required: false
+        default: "us-east-1"
+        type: string
+      DOCKER_IMAGE_TAG:
+        required: false
+        type: string
+      PACKAGE_VERSION:
+        required: false
+        type: string
+      ACCOUNT_ID:
+        required: false
+        type: number
+      S3_BUCKET:
+        required: false
+        type: string
+      S3_KEY:
+        required: false
+        type: string
+
+
+    secrets:
+      GH_WORKFLOW_TOKEN:
+        required: true
+      TE_DD_API_KEY:
+        required: true
+      DB_PASSWORD:
+        required: false
+      TE_DD_APP_KEY:
+        required: false
+
+jobs:
+  check_org:
+    name: Check Caller
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check the calling organization
+        if: ${{ github.repository_owner != 'trafilea' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('This reusable workflow can only be used by Trafilea.')
+
+  deploy:
+    needs: check_org
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
+      TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+      TF_VAR_docker_image_tag: ${{ inputs.DOCKER_IMAGE_TAG }}
+      PACKAGE_VERSION: ${{ inputs.PACKAGE_VERSION }}
+      ENV: ${{ inputs.ENVIRONMENT }}
+      DD_API_KEY: ${{ secrets.TE_DD_API_KEY }}
+      DD_APP_KEY: ${{ secrets.TE_DD_APP_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - run: |
+          git config --local --remove-section http."https://github.com/"
+          git config --global url."https://foo:${{ secrets.GH_WORKFLOW_TOKEN }}@github.com/trafilea".insteadOf "https://github.com/trafilea"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
+          aws-region: "${{ inputs.AWS_REGION }}"
+
+      - name: Clone action definition
+        uses: actions/checkout@v4
+        with:
+          repository: teracloud-io/check-ecr-image-exists-action
+          ref: main
+          fetch-depth: 0
+          path: ./.github/action-check-image-exists
+
+      - name: Update Lambda image uri
+        run: |
+          #aws lambda update-function-code --function-name arn:aws:lambda:us-east-1:${{ inputs.ACCOUNT_ID }}:function:${{ inputs.APP_NAME }} --image-uri 762869752790.dkr.ecr.us-east-1.amazonaws.com/${{ inputs.APP_NAME }}:${{ inputs.PACKAGE_VERSION }}
+          aws lambda update-function-code \                                            
+              --function-name arn:aws:lambda:us-east-1:${{ inputs.ACCOUNT_ID }}:function:${{ inputs.APP_NAME }} \
+              --s3-bucket ${{ inputs.S3_BUCKET }} \
+              --s3-key ${{ inputs.S3_KEY }}/${{ inputs.PACKAGE_VERSION }}.zip
+
+      - name: Datadog
+        uses: masci/datadog@v1
+        if: ${{ inputs.ENVIRONMENT == 'prod' && inputs.DOCKER_IMAGE_TAG != ''}}
+        with:
+          api-url: https://trafilea-engine.datadoghq.com
+          api-key: ${{ secrets.TE_DD_API_KEY }}
+          events: |
+            - title: "Production Deployment ran sucessfully for ${{ inputs.APP_NAME }}"
+              text: "Version ${{ inputs.DOCKER_IMAGE_TAG }} was deployed to Production on ${{ inputs.APP_NAME }}"
+              alert_type: "info"
+              host: ${{ github.repository_owner }}
+              tags:
+                - "project:${{ inputs.APP_NAME }}"

@@ -2,6 +2,10 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [6.0.4] - 25/04/2024
+### Added
+- Added `deploy_lambda_s3.yaml` and `deploy_lambda_uri.yaml` workflows.
+
 ## [5.0.0] - 07/03/2024
 ### Added
 - Modified `deploy_terragrunt.yaml`, `docker_build_and_push.yaml`, `terragrunt.yaml`. In the three of them I changed AWS_KEYS Authentication to OIDC Auth; peter-murray terraform action replaced with autero01 action which is more up to date and added TERRRAFORM/GRUNT_VERSION inputs; updated checkout and ecr actions to latest versions.
