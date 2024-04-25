@@ -2,6 +2,10 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [6.0.5] - 25/04/2024
+### Modified
+- `deploy_lambda_s3.yaml` fixed lambda s3 cli update command.
+
 ## [6.0.4] - 25/04/2024
 ### Added
 - Added `deploy_lambda_s3.yaml` and `deploy_lambda_uri.yaml` workflows.
