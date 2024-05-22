@@ -1,0 +1,81 @@
+name: Deploy ECS Task Definition
+
+on:
+  workflow_call:
+    inputs:
+      AWS_REGION:
+        required: false
+        default: "us-east-1"
+        type: string
+      APP_PREFIX:
+        required: true
+        type: string
+      DOCKER_IMAGE_TAG:
+        required: true
+        type: string
+      ENV_ACCOUNT_ID:
+        required: true
+        type: string
+      
+
+    secrets:
+      OPS_AWS_ACCESS_KEY_ID:
+        required: true
+      OPS_AWS_SECRET_ACCESS_KEY:
+        required: true
+      GH_WORKFLOW_TOKEN:
+        required: true
+
+jobs:
+  check_org:
+    name: Check Caller
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check the calling organization
+        if: ${{ github.repository_owner != 'trafilea' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('This reusable workflow can only be used by Trafilea.')
+
+  change_task_definition:
+    needs: upload_docker_image
+    name: Change Task Definition
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+          token: ${{ secrets.GH_WORKFLOW_TOKEN }}
+      
+      - name: Configure AWS Credentials
+        id: configure-credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ inputs.ENV_ACCOUNT_ID }}:role/terraform-admin-role
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ inputs.APP_PREFIX }}-task-def --query taskDefinition > task-definition.json
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ inputs.APP_PREFIX }}-container
+          image: ${{ inputs.DOCKER_IMAGE_TAG }}
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ inputs.APP_PREFIX }}-service
+          cluster: traf-engine-cluster
+          wait-for-service-stability: false
