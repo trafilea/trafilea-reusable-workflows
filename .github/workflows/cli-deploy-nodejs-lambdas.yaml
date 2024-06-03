@@ -1,0 +1,75 @@
+name: Deploy using Terragrunt
+
+on:
+  workflow_call:
+    inputs:
+      APP_NAME:
+        required: true
+        type: string
+      ACCOUNT_ID:
+        required: true
+        type: string
+      AWS_REGION:
+        required: false
+        default: "us-east-1"
+        type: string
+      PACKAGE_VERSION:
+        required: false
+        type: string
+      LAMBDA_NAME:
+        required: false
+        type: string
+    secrets:
+      GH_WORKFLOW_TOKEN:
+        required: true
+
+jobs:
+  check_org:
+    name: Check Caller
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check the calling organization
+        if: ${{ github.repository_owner != 'trafilea' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('This reusable workflow can only be used by Trafilea.')
+
+  deploy:
+    needs: check_org
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
+      PACKAGE_VERSION: ${{ inputs.PACKAGE_VERSION }}
+      ENV: ${{ inputs.ENVIRONMENT }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
+          aws-region: "${{ inputs.AWS_REGION }}"
+      
+      - name: Assume Terraform role
+        run: |
+          OUT=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.ACCOUNT_ID }}:role/terraform-admin-role --role-session-name GitHubActions)
+          export AWS_ACCESS_KEY_ID=$(echo $OUT | jq -r '.Credentials''.AccessKeyId')
+          export AWS_SECRET_ACCESS_KEY=$(echo $OUT | jq -r '.Credentials''.SecretAccessKey')
+          export AWS_SESSION_TOKEN=$(echo $OUT | jq -r '.Credentials''.SessionToken')
+
+      - name: Deploy Lambda
+        env:
+          APP_NAME: ${{ inputs.APP_NAME }}
+          VERSION: ${{ inputs.PACKAGE_VERSION }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
+          FUNCTION_NAME: ${{ inputs.LAMBDA_NAME }}
+        run: |
+          aws lambda update-function-code --function-name $FUNCTION_NAME --s3-bucket traf-core-builds --s3-key $APP_NAME/$APP_NAME-$VERSION.zip
