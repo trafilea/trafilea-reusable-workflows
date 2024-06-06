@@ -72,4 +72,4 @@ jobs:
           AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
           FUNCTION_NAME: ${{ inputs.LAMBDA_NAME }}
         run: |
-          aws lambda update-function-code --function-name $FUNCTION_NAME --s3-bucket traf-core-builds --s3-key $APP_NAME/$APP_NAME-$VERSION.zip
+          aws lambda update-function-code --function-name $APP_NAME-$FUNCTION_NAME --s3-bucket traf-core-builds --s3-key $APP_NAME/$APP_NAME-$VERSION.zip
