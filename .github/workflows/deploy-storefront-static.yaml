@@ -122,5 +122,5 @@ jobs:
           private: true
           cache: ${{ inputs.CACHE_MAX_AGE }}
           dist-id: ${{ inputs.CLOUDFRONT_ID }}
-          invalidation: /assets
+          invalidation: /assets/*
           delete-removed: false
