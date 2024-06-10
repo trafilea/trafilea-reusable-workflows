@@ -74,5 +74,4 @@ jobs:
           export AWS_ACCESS_KEY_ID=$(echo $OUT | jq -r '.Credentials''.AccessKeyId')
           export AWS_SECRET_ACCESS_KEY=$(echo $OUT | jq -r '.Credentials''.SecretAccessKey')
           export AWS_SESSION_TOKEN=$(echo $OUT | jq -r '.Credentials''.SessionToken')
-          aws lambda update-function-code --function-name arn:aws:lambda:us-east-1:${{ inputs.ACCOUNT_ID}}:function/$APP_NAME-$FUNCTION_NAME:LATEST --s3-bucket traf-core-builds --s3-key $APP_NAME/$APP_NAME-$VERSION.zip
-          
+          aws lambda update-function-code --function-name arn:aws:lambda:us-east-1:${{ inputs.ACCOUNT_ID}}:function:$APP_NAME-$FUNCTION_NAME --s3-bucket traf-core-builds --s3-key $APP_NAME/$APP_NAME-$VERSION.zip
