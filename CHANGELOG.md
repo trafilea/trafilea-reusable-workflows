@@ -2,6 +2,10 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [6.1.0] - 10/07/2024
+### Added
+- Added `deploy_ecs.yaml` workflow for updating ECS Task Definition image without Terraform.
+
 ## [6.0.5] - 25/04/2024
 ### Modified
 - `deploy_lambda_s3.yaml` fixed lambda s3 cli update command.
