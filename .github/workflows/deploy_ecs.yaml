@@ -1,0 +1,97 @@
+name: Deploy using Terragrunt
+
+on:
+  workflow_call:
+    inputs:
+      APP_NAME:
+        required: true
+        type: string
+      AWS_REGION:
+        required: false
+        default: "us-east-1"
+        type: string
+      DOCKER_IMAGE_TAG:
+        required: false
+        type: string
+      CLUSTER_NAME:
+        required: false
+        default: "traf-engine-cluster"
+        type: string
+      ENV_ACCOUNT_ID:
+        required: true
+        type: string
+
+    secrets:
+      GH_WORKFLOW_TOKEN:
+        required: true
+      TE_DD_API_KEY:
+        required: true
+      TE_DD_APP_KEY:
+        required: false
+
+jobs:
+  check_org:
+    name: Check Caller
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check the calling organization
+        if: ${{ github.repository_owner != 'trafilea' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('This reusable workflow can only be used by Trafilea.')
+
+  deploy:
+    needs: check_org
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
+      DD_API_KEY: ${{ secrets.TE_DD_API_KEY }}
+      DD_APP_KEY: ${{ secrets.TE_DD_APP_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - run: |
+          git config --local --remove-section http."https://github.com/"
+          git config --global url."https://foo:${{ secrets.GH_WORKFLOW_TOKEN }}@github.com/trafilea".insteadOf "https://github.com/trafilea"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
+          aws-region: "${{ inputs.AWS_REGION }}"
+
+      - name: Assume role in ENV Account
+        run: |
+          OUT=$(aws sts assume-role --role-arn  arn:aws:iam::${{ inputs.ENV_ACCOUNT_ID }}:role/terraform-admin-role --role-session-name GitHubActions)
+          export AWS_ACCESS_KEY_ID=$(echo $OUT | jq -r '.Credentials''.AccessKeyId')
+          export AWS_SECRET_ACCESS_KEY=$(echo $OUT | jq -r '.Credentials''.SecretAccessKey')
+          export AWS_SESSION_TOKEN=$(echo $OUT | jq -r '.Credentials''.SessionToken')
+      
+      - name: Download Task Definition
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ inputs.APP_NAME }}-task-def --query taskDefinition > task-definition.json
+
+      - name: Fill in the new Image TAG in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ inputs.APP_NAME }}-container
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy Amazon ECS Task Definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ inputs.APP_NAME }}-service
+          cluster: ${{ inputs.CLUSTER_NAME }}
+          wait-for-service-stability: false
+      
