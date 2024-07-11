@@ -5,6 +5,7 @@ All notable changes to this project will be documented on this file
 ## [6.1.0] - 10/07/2024
 ### Added
 - Added `deploy_ecs.yaml` workflow for updating ECS Task Definition image without Terraform.
+- Changed `terragrunt_test.yaml` - Added DD_API_KEY and DD_APP_KEY.
 
 ## [6.0.5] - 25/04/2024
 ### Modified
