@@ -6,6 +6,7 @@ All notable changes to this project will be documented on this file
 ### Added
 - Added `deploy_ecs.yaml` workflow for updating ECS Task Definition image without Terraform.
 - Changed `terragrunt_test.yaml` - Added DD_API_KEY and DD_APP_KEY.
+- Changed `docker_release.yaml` - Using OIDC IAM Role instead of AWS Keys
 
 ## [6.0.5] - 25/04/2024
 ### Modified
