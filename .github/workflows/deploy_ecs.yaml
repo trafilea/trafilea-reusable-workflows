@@ -86,14 +86,14 @@ jobs:
       - name: Download Task Definition
         run: |
           aws ecs describe-task-definition --task-definition ${{ inputs.APP_NAME }}-task-def --query taskDefinition > task-definition.json
-
-      - name: Fill in the new Image TAG in the Amazon ECS task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1.3.0
-        with:
-          task-definition: task-definition.json
-          container-name: ${{ inputs.APP_NAME }}-container
-          image: 762869752790.dkr.ecr.us-east-1.amazonaws.com/${{ inputs.ECR_REPO_NAME }}:${{ inputs.DOCKER_IMAGE_TAG }}
+      
+      - name: Replace Image Tag in Environment variables
+        env:
+          NEW_TAG: ${{ inputs.DOCKER_IMAGE_TAG }}
+          PROYECTO: ${{ inputs.ECR_REPO_NAME }}
+        run: |
+          export OLD_TAG=$(jq -r '.containerDefinitions[0] | select(.image | contains("'"$PROYECTO"'")) | .image' task-definition.json | sed 's/.*://')
+          jq -r '.' task-definition.json | sed "s/$OLD_TAG/$NEW_TAG/g" > temp_archivo.json && mv temp_archivo.json task-definition.json
 
       - name: Deploy Amazon ECS Task Definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
