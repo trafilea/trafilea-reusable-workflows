@@ -73,7 +73,7 @@ jobs:
       - name: Assume Role in ENV Account
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-region: us-east-2
+          aws-region: "${{ inputs.AWS_REGION }}"
           aws-access-key-id: ${{ steps.oidc.outputs.aws-access-key-id }}
           aws-secret-access-key: ${{ steps.oidc.outputs.aws-secret-access-key }}
           aws-session-token: ${{ steps.oidc.outputs.aws-session-token }}
