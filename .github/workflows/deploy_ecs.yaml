@@ -17,6 +17,10 @@ on:
         required: false
         default: "traf-engine-cluster"
         type: string
+      ECR_REPO_NAME:
+        required: false
+        type: string
+        default: ${{ inputs.APP_NAME }}
       ENV_ACCOUNT_ID:
         required: true
         type: string
@@ -85,11 +89,11 @@ jobs:
 
       - name: Fill in the new Image TAG in the Amazon ECS task definition
         id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        uses: aws-actions/amazon-ecs-render-task-definition@v1.3.0
         with:
           task-definition: task-definition.json
           container-name: ${{ inputs.APP_NAME }}-container
-          image: ${{ inputs.DOCKER_IMAGE_TAG }}
+          image: 762869752790.dkr.ecr.us-east-1.amazonaws.com/${{ inputs.ECR_REPO_NAME }}:${{ inputs.DOCKER_IMAGE_TAG }}
 
       - name: Deploy Amazon ECS Task Definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
