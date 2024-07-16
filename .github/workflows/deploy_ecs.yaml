@@ -63,17 +63,21 @@ jobs:
           git config --global url."https://foo:${{ secrets.GH_WORKFLOW_TOKEN }}@github.com/trafilea".insteadOf "https://github.com/trafilea"
 
       - name: Configure AWS Credentials
+        id: oidc
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
           aws-region: "${{ inputs.AWS_REGION }}"
+          output-credentials: true
 
-      - name: Assume role in ENV Account
-        run: |
-          OUT=$(aws sts assume-role --role-arn  arn:aws:iam::${{ inputs.ENV_ACCOUNT_ID }}:role/terraform-admin-role --role-session-name GitHubActions)
-          export AWS_ACCESS_KEY_ID=$(echo $OUT | jq -r '.Credentials''.AccessKeyId')
-          export AWS_SECRET_ACCESS_KEY=$(echo $OUT | jq -r '.Credentials''.SecretAccessKey')
-          export AWS_SESSION_TOKEN=$(echo $OUT | jq -r '.Credentials''.SessionToken')
+      - name: Assume Role in ENV Account
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-2
+          aws-access-key-id: ${{ steps.oidc.outputs.aws-access-key-id }}
+          aws-secret-access-key: ${{ steps.oidc.outputs.aws-secret-access-key }}
+          aws-session-token: ${{ steps.oidc.outputs.aws-session-token }}
+          role-to-assume: arn:aws:iam::${{ inputs.ENV_ACCOUNT_ID }}:role/terraform-admin-role
       
       - name: Download Task Definition
         run: |
