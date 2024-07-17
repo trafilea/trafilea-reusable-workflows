@@ -109,7 +109,11 @@ jobs:
         with:
           terragrunt-version: ${{ inputs.TERRAGRUNT_VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
+      - name: Terragrunt Refresh
+        run: terragrunt refresh
+        working-directory: ${{ github.workspace }}/${{ matrix.targets }}
+
       - name: Terragrunt Plan
         if: github.event_name == 'pull_request'
         run: terragrunt plan -lock=false --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies

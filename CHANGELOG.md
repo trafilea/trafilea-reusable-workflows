@@ -2,6 +2,10 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [6.2.0] - 17/07/2024
+### Modified
+- Changed  `terragrunt.yaml` - Adding terragrunt refresh step
+
 ## [6.1.0] - 10/07/2024
 ### Added
 - Added `deploy_ecs.yaml` workflow for updating ECS Task Definition image without Terraform.
