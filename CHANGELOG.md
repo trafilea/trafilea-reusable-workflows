@@ -2,6 +2,13 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [6.3.0] - 07/08/2024
+### Modified
+- Changed `argocd_deployment.yaml` - Added ConfigMap creation from .env in S3
+
+### Added
+- Added `s3_upload_env_file.yaml` workflow for uploading environment vars file to S3
+
 ## [6.2.0] - 17/07/2024
 ### Modified
 - Changed  `terragrunt.yaml` - Adding terragrunt refresh step

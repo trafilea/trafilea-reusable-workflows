@@ -12,11 +12,24 @@ on:
       APP_NAME:
         required: true
         type: string
+      APP_NAME_SHORT:
+        required: false
+        type: string
+        default: ${{ github.event.inputs.APP_NAME }}
+      ENV_ACCOUNT_ID:
+        required: true
+        type: string
+      AWS_REGION:
+        required: false
+        type: string
+        default: "us-east-1"
 
     secrets:
       GH_WORKFLOW_TOKEN:
         required: true
       ARGOCD_TOKEN:
+        required: true
+      OIDC_IAM_ROLE:
         required: true
 
 
@@ -56,6 +69,37 @@ jobs:
           ref: main
           fetch-depth: 0
           token: ${{ secrets.GH_WORKFLOW_TOKEN }}
+      
+      - name: Configure AWS Credentials
+        id: oidc
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
+          aws-region: "${{ inputs.AWS_REGION }}"
+          output-credentials: true
+
+      - name: Assume Role in ENV Account
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: "${{ inputs.AWS_REGION }}"
+          aws-access-key-id: ${{ steps.oidc.outputs.aws-access-key-id }}
+          aws-secret-access-key: ${{ steps.oidc.outputs.aws-secret-access-key }}
+          aws-session-token: ${{ steps.oidc.outputs.aws-session-token }}
+          role-to-assume: arn:aws:iam::${{ inputs.ENV_ACCOUNT_ID }}:role/terraform-admin-role
+
+      - name: Generate new ConfigMap
+        env:
+          aws_account_id: ${{ inputs.ENV_ACCOUNT_ID }}
+          project_name: ${{ inputs.APP_NAME }}
+          version: ${{ inputs.DOCKER_IMAGE_TAG }}
+        run: |
+          aws s3 cp s3://trafilea-app-configs-$aws_account_id/$project_name/$project_name-$version.env ./new-config/.env
+          echo "Environment variables copied successfully."
+          echo "Generating ConfigMap..."
+          kubectl create configmap $project_name-config --namespace=trafilea --from-env-file=./new-config/.env --dry-run=client -o yaml > ./new-config/configmap.yaml
+          cp ./new-config/configmap.yaml apps/overlays/$ENV/$APP_NAME/configmap.yaml
+          rm -rf ./new-config
+          echo "ConfigMap generated successfully."
 
       - name: Replace Image Tag
         run: |
