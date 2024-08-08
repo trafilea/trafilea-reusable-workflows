@@ -16,9 +16,6 @@ on:
         required: false
         type: string
         default: ${{ github.event.inputs.APP_NAME }}
-      ENV_ACCOUNT_ID:
-        required: true
-        type: string
       AWS_REGION:
         required: false
         type: string
@@ -76,25 +73,15 @@ jobs:
         with:
           role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
           aws-region: "${{ inputs.AWS_REGION }}"
-          output-credentials: true
-
-      - name: Assume Role in ENV Account
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: "${{ inputs.AWS_REGION }}"
-          aws-access-key-id: ${{ steps.oidc.outputs.aws-access-key-id }}
-          aws-secret-access-key: ${{ steps.oidc.outputs.aws-secret-access-key }}
-          aws-session-token: ${{ steps.oidc.outputs.aws-session-token }}
-          role-to-assume: arn:aws:iam::${{ inputs.ENV_ACCOUNT_ID }}:role/terraform-admin-role
 
       - name: Generate new ConfigMap
         env:
-          aws_account_id: ${{ inputs.ENV_ACCOUNT_ID }}
           project_name: ${{ inputs.APP_NAME }}
           project_name_short: ${{ inputs.APP_NAME_SHORT }}
           version: ${{ inputs.DOCKER_IMAGE_TAG }}
+          environment: ${{ inputs.ENVIRONMENT }}
         run: |
-          aws s3 cp s3://trafilea-app-configs-$aws_account_id/$project_name/$project_name-$version.env ./new-config/.env
+          aws s3 cp s3://trafilea-apps-config/$project_name/eks/$environment/$version.env ./new-config/.env
           echo "Environment variables copied successfully."
           echo "Generating ConfigMap..."
           kubectl create configmap $project_name_short-config --namespace=trafilea --from-env-file=./new-config/.env --dry-run=client -o yaml > ./new-config/configmap.yaml

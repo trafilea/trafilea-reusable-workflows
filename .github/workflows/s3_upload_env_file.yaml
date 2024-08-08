@@ -9,9 +9,6 @@ on:
       APP_NAME:
         required: true
         type: string
-      ENV_ACCOUNT_ID:
-        required: true
-        type: string
       AWS_REGION:
         required: false
         type: string
@@ -20,9 +17,6 @@ on:
         required: false
         type: string
         default: "configuration"
-      ENVIRONMENT:
-        required: true
-        type: string
 
     secrets:
       GH_WORKFLOW_TOKEN:
@@ -68,23 +62,16 @@ jobs:
         with:
           role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
           aws-region: "${{ inputs.AWS_REGION }}"
-          output-credentials: true
-
-      - name: Assume Role in ENV Account
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: "${{ inputs.AWS_REGION }}"
-          aws-access-key-id: ${{ steps.oidc.outputs.aws-access-key-id }}
-          aws-secret-access-key: ${{ steps.oidc.outputs.aws-secret-access-key }}
-          aws-session-token: ${{ steps.oidc.outputs.aws-session-token }}
-          role-to-assume: arn:aws:iam::${{ inputs.ENV_ACCOUNT_ID }}:role/terraform-admin-role
 
       - name: Upload .env to S3
         env:
-          aws_account_id: ${{ inputs.ENV_ACCOUNT_ID }}
           project_name: ${{ inputs.APP_NAME }}
           version: ${{ inputs.DOCKER_IMAGE_TAG }}
-          environment: ${{ inputs.ENVIRONMENT }}
           vars_directory: ${{ inputs.ENVIRONMENT_VARS_DIRECTORY }}
         run: |
-          aws s3 cp $vars_directory/.env.$environment s3://trafilea-app-configs-$aws_account_id/$project_name/$project_name-$version.env
+          aws s3 cp $vars_directory/ecs/.env.dev s3://trafilea-apps-config/$project_name/ecs/dev/$version.env
+          aws s3 cp $vars_directory/eks/.env.dev s3://trafilea-apps-config/$project_name/eks/dev/$version.env
+          aws s3 cp $vars_directory/ecs/.env.stage s3://trafilea-apps-config/$project_name/ecs/stage/$version.env
+          aws s3 cp $vars_directory/eks/.env.stage s3://trafilea-apps-config/$project_name/eks/stage/$version.env
+          aws s3 cp $vars_directory/ecs/.env.prod s3://trafilea-apps-config/$project_name/ecs/prod/$version.env
+          aws s3 cp $vars_directory/eks/.env.prod s3://trafilea-apps-config/$project_name/eks/prod/$version.env
