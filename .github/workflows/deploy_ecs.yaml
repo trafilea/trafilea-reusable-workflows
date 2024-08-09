@@ -87,7 +87,6 @@ jobs:
         id: download-task-def
         run: |
           aws ecs describe-task-definition --task-definition ${{ inputs.APP_NAME }}-task-def --query taskDefinition > task-definition.json
-          echo "old_task_def=$(jq -r '.taskDefinitionArn')" task-definition.json >> GITHUB_OUTPUT
       
       - name: Replace Image Tag in Environment variables
         env:
@@ -105,6 +104,3 @@ jobs:
           cluster: ${{ inputs.CLUSTER_NAME }}
           wait-for-service-stability: false
       
-      - name: DeRegister Previous Task Definition
-        run: |
-          aws ecs deregister-task-definition --task-definition ${{ steps.download-task-def.outputs.old_task_def }}
