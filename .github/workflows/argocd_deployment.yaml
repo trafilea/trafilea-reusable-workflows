@@ -26,8 +26,8 @@ on:
         required: true
       ARGOCD_TOKEN:
         required: true
-      OIDC_IAM_ROLE:
-        required: true
+#      OIDC_IAM_ROLE:
+#        required: true
 
 
 jobs:
