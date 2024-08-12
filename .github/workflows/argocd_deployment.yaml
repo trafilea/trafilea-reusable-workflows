@@ -26,8 +26,8 @@ on:
         required: true
       ARGOCD_TOKEN:
         required: true
-#      OIDC_IAM_ROLE:
-#        required: true
+      OIDC_IAM_ROLE:
+        required: true
 
 
 jobs:
@@ -67,12 +67,12 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GH_WORKFLOW_TOKEN }}
       
-      - name: Configure AWS Credentials
-        id: oidc
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
-          aws-region: "${{ inputs.AWS_REGION }}"
+#      - name: Configure AWS Credentials
+#        id: oidc
+#        uses: aws-actions/configure-aws-credentials@v4
+#        with:
+#          role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
+#          aws-region: "${{ inputs.AWS_REGION }}"
 
 #      - name: Generate new ConfigMap
 #        env:
