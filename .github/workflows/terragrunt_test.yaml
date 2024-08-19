@@ -22,6 +22,14 @@ on:
         required: false
         default: terraform
         type: string
+      TERRAFORM_VERSION:
+        required: false
+        type: string
+        default: 1.2.9
+      TERRAGRUNT_VERSION:
+        required: false
+        type: string
+        default: 0.36.12          
 
     secrets:
       GH_WORKFLOW_TOKEN:
@@ -80,12 +88,13 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
-          terraform_version: 1.2.9
+          terraform_version: ${{ inputs.TERRAFORM_VERSION }}
 
       - name: Install Terragrunt
-        uses: peter-murray/terragrunt-github-action@v1.0.0
+        uses: autero1/action-terragrunt@v3.0.2
         with:
-          terragrunt_version: 0.36.12
+          terragrunt-version: ${{ inputs.TERRAGRUNT_VERSION }}
+
 
       - name: Terragrunt Plan
         run: terragrunt run-all plan -lock=false --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
