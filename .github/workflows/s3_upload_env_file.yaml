@@ -17,6 +17,10 @@ on:
         required: false
         type: string
         default: "configuration"
+      ENV_FILE_PREFIX:
+        required: false
+        type: string
+        default: ".env"
 
     secrets:
       GH_WORKFLOW_TOKEN:
@@ -69,9 +73,9 @@ jobs:
           version: ${{ inputs.DOCKER_IMAGE_TAG }}
           vars_directory: ${{ inputs.ENVIRONMENT_VARS_DIRECTORY }}
         run: |
-          aws s3 cp $vars_directory/ecs/.env.dev s3://trafilea-apps-config/$project_name/ecs/dev/$version.env
-          aws s3 cp $vars_directory/eks/.env.dev s3://trafilea-apps-config/$project_name/eks/dev/$version.env
-          aws s3 cp $vars_directory/ecs/.env.stage s3://trafilea-apps-config/$project_name/ecs/stage/$version.env
-          aws s3 cp $vars_directory/eks/.env.stage s3://trafilea-apps-config/$project_name/eks/stage/$version.env
-          aws s3 cp $vars_directory/ecs/.env.prod s3://trafilea-apps-config/$project_name/ecs/prod/$version.env
-          aws s3 cp $vars_directory/eks/.env.prod s3://trafilea-apps-config/$project_name/eks/prod/$version.env
+          aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.dev s3://trafilea-apps-config/$project_name/ecs/dev/$version.env
+          aws s3 cp $vars_directory/eks/${{ inputs.ENV_FILE_PREFIX }}.dev s3://trafilea-apps-config/$project_name/eks/dev/$version.env
+          aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.stage s3://trafilea-apps-config/$project_name/ecs/stage/$version.env
+          aws s3 cp $vars_directory/eks/${{ inputs.ENV_FILE_PREFIX }}.stage s3://trafilea-apps-config/$project_name/eks/stage/$version.env
+          aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.prod s3://trafilea-apps-config/$project_name/ecs/prod/$version.env
+          aws s3 cp $vars_directory/eks/${{ inputs.ENV_FILE_PREFIX }}.prod s3://trafilea-apps-config/$project_name/eks/prod/$version.env
