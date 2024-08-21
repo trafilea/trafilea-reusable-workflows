@@ -83,6 +83,11 @@ jobs:
         run: |
           aws s3 cp s3://trafilea-apps-config/$project_name/eks/$environment/$version.env ./new-config/.env
           echo "Environment variables copied successfully."
+
+          echo "Cleaning .env for ConfigMap generation ..."
+          sed -i 's/ *= */=/; s/"//g' new-config/.env
+          echo "Cleaning finished"
+          
           echo "Generating ConfigMap..."
           kubectl create configmap $project_name_short-config --namespace=trafilea --from-env-file=./new-config/.env --dry-run=client -o yaml > ./new-config/configmap.yaml
           cp ./new-config/configmap.yaml apps/overlays/$ENV/$APP_NAME/configmap.yaml
