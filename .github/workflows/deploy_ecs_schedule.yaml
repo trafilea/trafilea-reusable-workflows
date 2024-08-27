@@ -117,15 +117,17 @@ jobs:
       
       - name: Download Event Targets
         env:
-          SCHEDULE_RULE_NAME: ${{ inputs.SHEDULE_RULE_NAME || ${{ inputs.APP_NAME }}-cw-event-rule }}
+          SCHEDULE_RULE_NAME: ${{ inputs.SHEDULE_RULE_NAME }}
         run: |
+          SCHEDULE_RULE_NAME=${SCHEDULE_RULE_NAME:-${{ inputs.APP_NAME }}-cw-event-rule}
           aws events list-targets-by-rule --rule $SHEDULE_RULE_NAME > targets.json
       
       - name: Update Event Targets
         env:
-          SCHEDULE_RULE_NAME: ${{ inputs.SHEDULE_RULE_NAME || ${{ inputs.APP_NAME }}-cw-event-rule }}      
+          SCHEDULE_RULE_NAME: ${{ inputs.SHEDULE_RULE_NAME }}      
         run: |
+          SCHEDULE_RULE_NAME=${SCHEDULE_RULE_NAME:-${{ inputs.APP_NAME }}-cw-event-rule}
           jq --arg new_arn "$new_task_def_arn" '.Targets[].EcsParameters.TaskDefinitionArn = $new_arn' targets.json > updated-targets.json
-          aws events put-targets --rule $SHEDULE_RULE_NAME --cli-input-json file://updated-targets.json
+          aws events put-targets --rule $SCHEDULE_RULE_NAME --cli-input-json file://updated-targets.json
           echo "Targets updated"
     
