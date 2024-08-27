@@ -102,6 +102,7 @@ jobs:
 
       - name: Prepare New Task Definition
         run: |
+          cat task-definition.json
           jq 'del(.taskDefinition.taskDefinitionArn, 
                 .taskDefinition.revision, 
                 .taskDefinition.status, 
