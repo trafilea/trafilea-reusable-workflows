@@ -102,18 +102,18 @@ jobs:
 
       - name: Prepare New Task Definition
         run: |
-          jq 'del(.taskDefinition.taskDefinitionArn, 
-                .taskDefinition.revision, 
-                .taskDefinition.status, 
-                .taskDefinition.requiresAttributes, 
-                .taskDefinition.compatibilities, 
-                .taskDefinition.registeredAt, 
-                .taskDefinition.registeredBy)' task-definition.json > new-task-definition.json           
+          jq 'del(.taskDefinitionArn, 
+                .revision, 
+                .status, 
+                .requiresAttributes, 
+                .compatibilities, 
+                .registeredAt, 
+                .registeredBy)' task-definition.json > new-task-definition.json           
 
       - name: Register New Task Definition
         run: |
           result=$(aws ecs register-task-definition --no-cli-pager --cli-input-json file://new-task-definition.json --output json)
-          new_task_def_arn=$(echo $result | jq -r '.taskDefinition.taskDefinitionArn')
+          new_task_def_arn=$(echo $result | jq -r '.taskDefinitionArn')
           echo "New task definition registered: $new_task_def_arn"
       
       - name: Download Event Targets
