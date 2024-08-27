@@ -112,8 +112,7 @@ jobs:
       - name: Register New Task Definition
         run: |
           result=$(aws ecs register-task-definition --no-cli-pager --cli-input-json file://new-task-definition.json --output json)
-          echo $result
-          new_task_def_arn=$(echo $result | jq -r '.taskDefinitionArn')
+          new_task_def_arn=$(echo $result | jq -r '.taskDefinition.taskDefinitionArn')
           echo "New task definition registered: $new_task_def_arn"
           echo "new_task_def_arn=$new_task_def_arn" >> $GITHUB_ENV                
 
