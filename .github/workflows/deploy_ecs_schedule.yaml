@@ -110,6 +110,10 @@ jobs:
                 .taskDefinition.registeredAt, 
                 .taskDefinition.registeredBy)' task-definition.json | jq '.taskDefinition' > new-task-definition.json
 
+      - name: Debug - Check New Task Definition
+        run: |
+          cat new-task-definition.json                
+
       - name: Register New Task Definition
         run: |
           result=$(aws ecs register-task-definition --no-cli-pager --cli-input-json file://new-task-definition.json --output json)
