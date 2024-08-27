@@ -109,25 +109,17 @@ jobs:
                 .registeredAt, 
                 .registeredBy)' task-definition.json > new-task-definition.json           
 
-      - name: Register New Task Definition
+      - name: Set Default Schedule Rule Name
+        id: set-schedule-rule-name
         run: |
-          result=$(aws ecs register-task-definition --no-cli-pager --cli-input-json file://new-task-definition.json --output json)
-          new_task_def_arn=$(echo $result | jq -r '.taskDefinitionArn')
-          echo "New task definition registered: $new_task_def_arn"
+          echo "SCHEDULE_RULE_NAME=${{ inputs.SHEDULE_RULE_NAME:-${{ inputs.APP_NAME }}-cw-event-rule}}" >> $GITHUB_ENV
       
       - name: Download Event Targets
-        env:
-          SCHEDULE_RULE_NAME: ${{ inputs.SHEDULE_RULE_NAME }}
         run: |
-          SCHEDULE_RULE_NAME="${SCHEDULE_RULE_NAME:-${{ inputs.APP_NAME }}-cw-event-rule}"
-          aws events list-targets-by-rule --rule $SHEDULE_RULE_NAME > targets.json
+          aws events list-targets-by-rule --rule ${{ env.SCHEDULE_RULE_NAME }} > targets.json
       
       - name: Update Event Targets
-        env:
-          SCHEDULE_RULE_NAME: ${{ inputs.SHEDULE_RULE_NAME }}      
         run: |
-          SCHEDULE_RULE_NAME="${SCHEDULE_RULE_NAME:-${{ inputs.APP_NAME }}-cw-event-rule}"
           jq --arg new_arn "$new_task_def_arn" '.Targets[].EcsParameters.TaskDefinitionArn = $new_arn' targets.json > updated-targets.json
-          aws events put-targets --rule $SCHEDULE_RULE_NAME --cli-input-json file://updated-targets.json
+          aws events put-targets --rule ${{ env.SCHEDULE_RULE_NAME }} --cli-input-json file://updated-targets.json
           echo "Targets updated"
-    
