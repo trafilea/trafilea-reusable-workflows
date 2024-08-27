@@ -102,18 +102,13 @@ jobs:
 
       - name: Prepare New Task Definition
         run: |
-          cat task-definition.json
           jq 'del(.taskDefinition.taskDefinitionArn, 
                 .taskDefinition.revision, 
                 .taskDefinition.status, 
                 .taskDefinition.requiresAttributes, 
                 .taskDefinition.compatibilities, 
                 .taskDefinition.registeredAt, 
-                .taskDefinition.registeredBy)' task-definition.json | jq '.taskDefinition' > new-task-definition.json
-
-      - name: Debug - Check New Task Definition
-        run: |
-          cat new-task-definition.json                
+                .taskDefinition.registeredBy)' task-definition.json > new-task-definition.json           
 
       - name: Register New Task Definition
         run: |
