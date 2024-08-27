@@ -4,9 +4,8 @@ on:
   workflow_call:
     inputs:
       APP_NAME:
-        required: false
+        required: true
         type: string
-        default: ${{ inputs.TASK_NAME }}
       AWS_REGION:
         required: false
         default: "us-east-1"
@@ -22,14 +21,10 @@ on:
         required: false
         type: string
         default: ${{ inputs.APP_NAME }}
-      TASK_NAME:
-        required: true
-        type: string
-        default: false
       SHEDULE_RULE_NAME:
         required: false
         type: string
-        default: ${{ inputs.TASK_NAME }}-cw-event-rule
+        default: ${{ inputs.APP_NAME }}-cw-event-rule
       ENV_ACCOUNT_ID:
         required: true
         type: string
@@ -95,7 +90,7 @@ jobs:
       - name: Download Task Definition
         id: download-task-def
         run: |
-          aws ecs describe-task-definition --task-definition ${{ inputs.TASK_NAME }}-task-def --query taskDefinition > task-definition.json
+          aws ecs describe-task-definition --task-definition ${{ inputs.APP_NAME }}-task-def --query taskDefinition > task-definition.json
       
       - name: Replace Image Tag in Environment variables
         env:
