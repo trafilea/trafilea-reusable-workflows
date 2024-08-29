@@ -1,0 +1,135 @@
+name: Deploy using Terragrunt
+
+on:
+  workflow_call:
+    inputs:
+      APP_NAME:
+        required: true
+        type: string
+      AWS_REGION:
+        required: false
+        default: "us-east-1"
+        type: string
+      DOCKER_IMAGE_TAG:
+        required: false
+        type: string
+      CLUSTER_NAME:
+        required: false
+        default: "traf-engine-cluster"
+        type: string
+      ECR_REPO_NAME:
+        required: false
+        type: string
+        default: ${{ inputs.APP_NAME }}
+      SHEDULE_RULE_NAME:
+        required: false
+        type: string
+      ENV_ACCOUNT_ID:
+        required: true
+        type: string
+
+    secrets:
+      GH_WORKFLOW_TOKEN:
+        required: true
+      TE_DD_API_KEY:
+        required: true
+      TE_DD_APP_KEY:
+        required: false
+
+jobs:
+  check_org:
+    name: Check Caller
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check the calling organization
+        if: ${{ github.repository_owner != 'trafilea' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('This reusable workflow can only be used by Trafilea.')
+
+  deploy:
+    needs: check_org
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
+      DD_API_KEY: ${{ secrets.TE_DD_API_KEY }}
+      DD_APP_KEY: ${{ secrets.TE_DD_APP_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - run: |
+          git config --local --remove-section http."https://github.com/"
+          git config --global url."https://foo:${{ secrets.GH_WORKFLOW_TOKEN }}@github.com/trafilea".insteadOf "https://github.com/trafilea"
+
+      - name: Configure AWS Credentials
+        id: oidc
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
+          aws-region: "${{ inputs.AWS_REGION }}"
+          output-credentials: true
+
+      - name: Assume Role in ENV Account
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: "${{ inputs.AWS_REGION }}"
+          aws-access-key-id: ${{ steps.oidc.outputs.aws-access-key-id }}
+          aws-secret-access-key: ${{ steps.oidc.outputs.aws-secret-access-key }}
+          aws-session-token: ${{ steps.oidc.outputs.aws-session-token }}
+          role-to-assume: arn:aws:iam::${{ inputs.ENV_ACCOUNT_ID }}:role/terraform-admin-role
+      
+      - name: Download Task Definition
+        id: download-task-def
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ inputs.APP_NAME }}-task-def --query taskDefinition > task-definition.json
+      
+      - name: Replace Image Tag in Environment variables
+        env:
+          NEW_TAG: ${{ inputs.DOCKER_IMAGE_TAG }}
+          PROYECTO: ${{ inputs.ECR_REPO_NAME }}
+        run: |
+          export OLD_TAG=$(jq -r '.containerDefinitions[0] | select(.image | contains("'"$PROYECTO"'")) | .image' task-definition.json | sed 's/.*://')
+          jq -r '.' task-definition.json | sed "s/$OLD_TAG/$NEW_TAG/g" > temp_archivo.json && mv temp_archivo.json task-definition.json
+
+      - name: Prepare New Task Definition
+        run: |
+          jq 'del(.taskDefinitionArn, 
+                .revision, 
+                .status, 
+                .requiresAttributes, 
+                .compatibilities, 
+                .registeredAt, 
+                .registeredBy)' task-definition.json > new-task-definition.json           
+
+      - name: Register New Task Definition
+        run: |
+          result=$(aws ecs register-task-definition --no-cli-pager --cli-input-json file://new-task-definition.json --output json)
+          new_task_def_arn=$(echo $result | jq -r '.taskDefinition.taskDefinitionArn')
+          echo "New task definition registered: $new_task_def_arn"
+          echo "new_task_def_arn=$new_task_def_arn" >> $GITHUB_ENV                
+
+      - name: Set Default Schedule Rule Name
+        run: |
+          if [ -z "${{ inputs.SHEDULE_RULE_NAME }}" ]; then
+            echo "SCHEDULE_RULE_NAME=${{ inputs.APP_NAME }}-cw-event-rule" >> $GITHUB_ENV
+          else
+            echo "SCHEDULE_RULE_NAME=${{ inputs.SHEDULE_RULE_NAME }}" >> $GITHUB_ENV
+          fi
+      
+      - name: Download Event Targets
+        run: |
+          aws events list-targets-by-rule --rule ${{ env.SCHEDULE_RULE_NAME }} > targets.json
+      
+      - name: Update Event Targets
+        run: |
+          jq --arg new_arn "$new_task_def_arn" '.Targets[].EcsParameters.TaskDefinitionArn = $new_arn' targets.json > updated-targets.json
+          aws events put-targets --rule ${{ env.SCHEDULE_RULE_NAME }} --cli-input-json file://updated-targets.json
+          echo "Targets updated"
