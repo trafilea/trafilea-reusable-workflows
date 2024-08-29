@@ -89,7 +89,7 @@ jobs:
           echo "Cleaning finished"
           
           echo "Generating ConfigMap..."
-          kubectl create configmap $project_name_short-config --namespace=trafilea --from-env-file=./new-config/.env --dry-run=client -o yaml > ./new-config/configmap.yaml
+          kubectl create configmap $project_name_short -config --namespace=trafilea --from-env-file=./new-config/.env --dry-run=client -o yaml > ./new-config/configmap.yaml
           cp ./new-config/configmap.yaml apps/overlays/$ENV/$APP_NAME/configmap.yaml
           rm -rf ./new-config
           echo "ConfigMap generated successfully."
