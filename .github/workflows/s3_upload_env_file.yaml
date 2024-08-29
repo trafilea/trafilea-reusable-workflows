@@ -78,7 +78,7 @@ jobs:
           vars_directory: ${{ inputs.ENVIRONMENT_VARS_DIRECTORY }}
         run: |
           valid_types=("ecs" "eks" "all")
-          if [[ ! " ${valid_types[@]} " =~ " ${inputs.ENV_FILE_TYPE} " ]]; then
+          if [[ ! "${valid_types[@]}" =~ "${{ inputs.ENV_FILE_TYPE }}" ]]; then
             echo "Invalid ENV_FILE_TYPE specified. Supported types are 'ecs', 'eks', or 'all'."
             exit 1
           fi
