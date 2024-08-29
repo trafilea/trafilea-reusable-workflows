@@ -17,6 +17,10 @@ on:
         required: false
         type: string
         default: "configuration"
+      ENV_FILE_TYPE:
+        required: false
+        type: string
+        default: "all"
       ENV_FILE_PREFIX:
         required: false
         type: string
@@ -73,9 +77,22 @@ jobs:
           version: ${{ inputs.DOCKER_IMAGE_TAG }}
           vars_directory: ${{ inputs.ENVIRONMENT_VARS_DIRECTORY }}
         run: |
-          aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.dev s3://trafilea-apps-config/$project_name/ecs/dev/$version.env
-          aws s3 cp $vars_directory/eks/${{ inputs.ENV_FILE_PREFIX }}.dev s3://trafilea-apps-config/$project_name/eks/dev/$version.env
-          aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.stage s3://trafilea-apps-config/$project_name/ecs/stage/$version.env
-          aws s3 cp $vars_directory/eks/${{ inputs.ENV_FILE_PREFIX }}.stage s3://trafilea-apps-config/$project_name/eks/stage/$version.env
-          aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.prod s3://trafilea-apps-config/$project_name/ecs/prod/$version.env
-          aws s3 cp $vars_directory/eks/${{ inputs.ENV_FILE_PREFIX }}.prod s3://trafilea-apps-config/$project_name/eks/prod/$version.env
+          valid_types=("ecs" "eks" "all")
+          if [[ ! " ${valid_types[@]} " =~ " ${inputs.ENV_FILE_TYPE} " ]]; then
+            echo "Invalid ENV_FILE_TYPE specified. Supported types are 'ecs', 'eks', or 'all'."
+            exit 1
+          fi
+
+          if [[ "${{ inputs.ENV_FILE_TYPE }}" == "ecs" || "${{ inputs.ENV_FILE_TYPE }}" == "all" ]]; then
+            echo "Uploading ECS environment files..."
+            aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.dev s3://trafilea-apps-config/$project_name/ecs/dev/$version.env
+            aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.stage s3://trafilea-apps-config/$project_name/ecs/stage/$version.env
+            aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.prod s3://trafilea-apps-config/$project_name/ecs/prod/$version.env
+          fi
+
+          if [[ "${{ inputs.ENV_FILE_TYPE }}" == "eks" || "${{ inputs.ENV_FILE_TYPE }}" == "all" ]]; then
+            echo "Uploading EKS environment files..."
+            aws s3 cp $vars_directory/eks/${{ inputs.ENV_FILE_PREFIX }}.dev s3://trafilea-apps-config/$project_name/eks/dev/$version.env
+            aws s3 cp $vars_directory/eks/${{ inputs.ENV_FILE_PREFIX }}.stage s3://trafilea-apps-config/$project_name/eks/stage/$version.env
+            aws s3 cp $vars_directory/eks/${{ inputs.ENV_FILE_PREFIX }}.prod s3://trafilea-apps-config/$project_name/eks/prod/$version.env
+          fi
