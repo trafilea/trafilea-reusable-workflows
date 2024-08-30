@@ -85,9 +85,9 @@ jobs:
 
           if [[ "${{ inputs.ENV_FILE_TYPE }}" == "ecs" || "${{ inputs.ENV_FILE_TYPE }}" == "all" ]]; then
             echo "Uploading ECS environment files..."
-            aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.dev s3://trafilea-apps-config/$project_name/ecs/dev/$version.env
-            aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.stage s3://trafilea-apps-config/$project_name/ecs/stage/$version.env
-            aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.prod s3://trafilea-apps-config/$project_name/ecs/prod/$version.env
+            sed -i 's/ *= */=/g' $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.dev && aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.dev s3://trafilea-apps-config/$project_name/ecs/dev/$version.env
+            sed -i 's/ *= */=/g' $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.stage && aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.stage s3://trafilea-apps-config/$project_name/ecs/stage/$version.env
+            sed -i 's/ *= */=/g' $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.prod && aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.prod s3://trafilea-apps-config/$project_name/ecs/prod/$version.env
           fi
 
           if [[ "${{ inputs.ENV_FILE_TYPE }}" == "eks" || "${{ inputs.ENV_FILE_TYPE }}" == "all" ]]; then
