@@ -17,6 +17,10 @@ on:
         required: false
         type: string
         default: '.'
+      DOCKERFILE_NAME:
+        required: false
+        type: string
+        default: 'Dockerfile'
 
     secrets:
       OIDC_IAM_ROLE:
@@ -73,6 +77,6 @@ jobs:
           cd $DOCKERFILE_FOLDER
           docker build . \
             --progress plain \
-            --file Dockerfile \
+            --file ${{ inputs.DOCKERFILE_NAME }} \
             --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.TAG }}
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ inputs.TAG }}
