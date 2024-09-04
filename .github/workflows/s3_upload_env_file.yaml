@@ -29,8 +29,6 @@ on:
     secrets:
       GH_WORKFLOW_TOKEN:
         required: true
-      ARGOCD_TOKEN:
-        required: true
       OIDC_IAM_ROLE:
         required: true
 
