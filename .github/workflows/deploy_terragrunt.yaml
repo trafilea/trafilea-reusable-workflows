@@ -110,19 +110,5 @@ jobs:
         working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
 
       - name: Terragrunt Apply
-        run: terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color
+        run: terragrunt run-all destroy --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color
         working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
-
-      - name: Datadog
-        uses: masci/datadog@v1
-        if: ${{ inputs.ENVIRONMENT == 'prod' && inputs.DOCKER_IMAGE_TAG != ''}}
-        with:
-          api-url: https://trafilea-engine.datadoghq.com
-          api-key: ${{ secrets.TE_DD_API_KEY }}
-          events: |
-            - title: "Production Deployment ran sucessfully for ${{ inputs.APP_NAME }}"
-              text: "Version ${{ inputs.DOCKER_IMAGE_TAG }} was deployed to Production on ${{ inputs.APP_NAME }}"
-              alert_type: "info"
-              host: ${{ github.repository_owner }}
-              tags:
-                - "project:${{ inputs.APP_NAME }}"
