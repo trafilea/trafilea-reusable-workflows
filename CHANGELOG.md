@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented on this file
 
+## [6.5.2] - 20/09/2024
+### Added
+- Added DOCKERFILE_NAME input to `docker_build_and_push.yaml` for specifying the Dockerfile to use during build.
+
 ## [6.5.1] - 04/09/2024
 ### Added
 - Added DOCKERFILE_NAME input to `docker_release.yaml` for specifying the Dockerfile to use during build.

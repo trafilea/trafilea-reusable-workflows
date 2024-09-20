@@ -18,6 +18,10 @@ on:
         required: false
         type: string
         default: '.'
+      DOCKERFILE_NAME:
+        required: false
+        type: string
+        default: 'Dockerfile'
 
     outputs:
       image_tag:
@@ -87,6 +91,7 @@ jobs:
           cd $DOCKERFILE_FOLDER
           docker build . \
             ${{ inputs.DOCKER_BUILD_ARGS }} \
+            --file ${{ inputs.DOCKERFILE_NAME }} \
             --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
           docker tag \
             $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }} \
