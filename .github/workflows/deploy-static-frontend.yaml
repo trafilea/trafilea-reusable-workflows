@@ -1,0 +1,108 @@
+name: Upload Static Frontend
+
+on:
+  workflow_call:
+    inputs:
+      FRONTEND_BUCKET:
+        required: true
+        type: string
+      ENV_ACCOUNT_ID:
+        required: true
+        type: string
+      CLOUDFRONT_DISTRIBUTION_ID:
+        required: true
+        type: string
+      BUILDS_BUCKET:
+        required: true
+        type: string
+      AWS_REGION:
+        required: false
+        default: "us-east-1"
+        type: string
+      PACKAGE_NAME:
+        required: true
+        type: string
+      VERSION:
+        required: true
+        type: string
+
+    secrets:
+      OIDC_IAM_ROLE:
+        required: true
+      GH_WORKFLOW_TOKEN:
+        required: true
+
+jobs:
+  check_org:
+    name: Check Caller
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check the calling organization
+        if: ${{ github.repository_owner != 'trafilea' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('This reusable workflow can only be used by Trafilea.')
+
+  upload:
+    needs: check_org
+    name: Upload
+    runs-on: ubuntu-latest
+    
+    env:
+      AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3.1.0
+        with:
+          submodules: true
+          token: ${{ secrets.GH_WORKFLOW_TOKEN }}
+
+      - name: Configure AWS Credentials - OPS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
+          aws-region: "${{ inputs.AWS_REGION }}"
+      
+      - name: Download build from Builds Bucket
+        env:
+          PACKAGE_NAME: ${{ inputs.PACKAGE_NAME }}
+          VERSION: ${{ inputs.VERSION }}
+          BUILDS_BUCKET: ${{ inputs.BUILDS_BUCKET }}
+        run: |
+          PACKAGE_FILE=$PACKAGE_NAME-$VERSION.zip
+          aws s3 cp s3://$BUILDS_BUCKET/$PACKAGE_NAME/$PACKAGE_FILE $PACKAGE_FILE
+      
+      - name: UnZip Package into build folder
+        env:
+          PACKAGE_FILE: $PACKAGE_NAME-$VERSION.zip
+        run: |
+          mkdir build
+          unzip $PACKAGE_FILE -d build
+    
+      - name: Configure AWS Credentials - ENV
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: "${{ inputs.AWS_REGION }}"
+          aws-access-key-id: ${{ steps.creds.outputs.aws-access-key-id }}
+          aws-secret-access-key: ${{ steps.creds.outputs.aws-secret-access-key }}
+          aws-session-token: ${{ steps.creds.outputs.aws-session-token }}
+          role-to-assume: arn:aws:iam::${{ inputs.ENV_ACCOUNT_ID }}:role/terraform-admin-role
+          role-duration-seconds: 3600
+          role-session-name: "GitHubActions"
+          
+      - name: Upload build to Amazon S3
+        env:
+          BUILD_FOLDER: build
+          AWS_S3_BUCKET: ${{ inputs.FRONTEND_BUCKET }}
+        run: |
+          aws s3 rm s3://$AWS_S3_BUCKET --recursive
+          cd $BUILD_FOLDER
+          aws s3 cp . s3://$AWS_S3_BUCKET --recursive
+      
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ inputs.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"//$AWS_S3_BUCKET/$PROJECT_NAME/$PACKAGE_FILE
+          rm -f $PACKAGE_FILE
