@@ -86,12 +86,14 @@ jobs:
         with:
           role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
           aws-region: "${{ inputs.AWS_REGION }}"
+          output-credentials: true
 
       - name: Build and Zip package
         run: |
           ${{ inputs.INSTALL_COMMAND }}
           ${{ inputs.BUILD_COMMAND }}
-          zip -r ${{ inputs.PACKAGE_NAME}}-${{ steps.set-version.outputs.version }}.zip ${{ inputs.BUILD_FOLDER }}
+          cd ${{ inputs.BUILD_FOLDER }}
+          zip -r ${{ inputs.PACKAGE_NAME}}-${{ steps.set-version.outputs.version }}.zip .
       
       - name: Upload build to Amazon S3
         env:
