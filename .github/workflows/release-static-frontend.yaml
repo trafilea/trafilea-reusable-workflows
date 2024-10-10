@@ -72,7 +72,8 @@ jobs:
         run: |
           ${{ inputs.INSTALL_COMMAND }}
           ${{ inputs.BUILD_COMMAND }}
-          zip -r ${{ inputs.PACKAGE_NAME}}-${{ inputs.VERSION }}.zip ${{ inputs.BUILD_FOLDER }}
+          cd ${{ inputs.BUILD_FOLDER }}
+          zip -r ${{ inputs.PACKAGE_NAME}}-${{ inputs.VERSION }}.zip .
       
       - name: Upload build to Amazon S3
         env:
@@ -80,5 +81,6 @@ jobs:
           AWS_S3_BUCKET: ${{ inputs.BUILDS_BUCKET }}
           PROJECT_NAME: ${{ inputs.PACKAGE_NAME }}
         run: |
+          cd ${{ inputs.BUILD_FOLDER }}
           aws s3 cp $PACKAGE_FILE s3://$AWS_S3_BUCKET/$PROJECT_NAME/$PACKAGE_FILE
           rm -f $PACKAGE_FILE
