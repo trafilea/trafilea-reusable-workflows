@@ -78,10 +78,11 @@ jobs:
       
       - name: UnZip Package into build folder
         env:
-          PACKAGE_FILE: $PACKAGE_NAME-$VERSION.zip
+          PACKAGE_NAME: ${{ inputs.PACKAGE_NAME }}
+          VERSION: ${{ inputs.VERSION }}
         run: |
           mkdir build
-          unzip $PACKAGE_FILE -d build
+          unzip $PACKAGE_NAME-$VERSION.zip -d build
     
       - name: Configure AWS Credentials - ENV
         uses: aws-actions/configure-aws-credentials@v4
@@ -104,6 +105,9 @@ jobs:
           aws s3 cp . s3://$AWS_S3_BUCKET --recursive
       
       - name: Invalidate CloudFront cache
+        env:
+          PACKAGE_NAME: ${{ inputs.PACKAGE_NAME }}
+          VERSION: ${{ inputs.VERSION }}
         run: |
           aws cloudfront create-invalidation --distribution-id ${{ inputs.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"//$AWS_S3_BUCKET/$PROJECT_NAME/$PACKAGE_FILE
-          rm -f $PACKAGE_FILE
+          rm -f $PACKAGE_NAME-$VERSION.zip
