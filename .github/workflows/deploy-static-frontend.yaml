@@ -61,6 +61,7 @@ jobs:
           token: ${{ secrets.GH_WORKFLOW_TOKEN }}
 
       - name: Configure AWS Credentials - OPS
+        id: creds
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
