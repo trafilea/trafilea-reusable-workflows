@@ -20,9 +20,6 @@ on:
         ENV_ACCOUNT_ID:
             required: true
             type: string
-        ARGO_SERVER:    
-            required: true
-            type: string
         
       secrets:
         TE_DD_API_KEY:
