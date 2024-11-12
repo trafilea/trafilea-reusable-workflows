@@ -20,6 +20,10 @@ on:
         ENV_ACCOUNT_ID:
             required: true
             type: string
+        CONTAINER_TYPE:
+            required: false
+            type: string
+            default: "all"
         
       secrets:
         TE_DD_API_KEY:
@@ -45,7 +49,8 @@ jobs:
                 script: |
                   core.setFailed('This reusable workflow can only be used by Trafilea.')
 
-    rollback:
+    rollback-ecs:
+        if: ${{ inputs.CONTAINER_TYPE == 'all' || inputs.CONTAINER_TYPE == 'ecs' }}
         needs: check_org
         name: Deploy
         runs-on: ubuntu-latest
@@ -102,6 +107,18 @@ jobs:
               run: |
                     aws ecs update-service --cluster ${{ inputs.CLUSTER_NAME }} --service ${{ inputs.APP_NAME }} --task-definition ${{ env.PREVIOUS_TASK_DEFINITION_ARN }}
 
+    rollback-eks:
+        if: ${{ inputs.CONTAINER_TYPE == 'all' || inputs.CONTAINER_TYPE == 'eks' }}
+        needs: check_org
+        name: Deploy
+        runs-on: ubuntu-latest
+        
+        env:
+            AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
+            DD_API_KEY: ${{ secrets.TE_DD_API_KEY }}
+            DD_APP_KEY: ${{ secrets.TE_DD_APP_KEY }}
+
+        steps:
             - name: Set argocd server
               id: setdest
               run: |
