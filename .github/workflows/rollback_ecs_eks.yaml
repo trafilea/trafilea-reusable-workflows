@@ -1,0 +1,117 @@
+name: Rollback ECS & EKS Service
+
+on:
+    workflow_call:
+      inputs:
+        ENVIRONMENT:
+          required: true
+          type: string
+        AWS_REGION:
+          required: false
+          default: "us-east-1"
+          type: string
+        APP_NAME:
+          required: true
+          type: string
+        CLUSTER_NAME:
+          required: false
+          default: "traf-engine-cluster"
+          type: string
+        ENV_ACCOUNT_ID:
+            required: true
+            type: string
+        ARGO_SERVER:    
+            required: true
+            type: string
+        
+      secrets:
+        TE_DD_API_KEY:
+            required: true
+        TE_DD_APP_KEY:
+            required: false
+        ARGOCD_TOKEN:
+            required: true
+        OIDC_IAM_ROLE:
+            required: true
+        
+
+jobs:
+    check_org:
+        name: Check Caller
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Check the calling organization
+              if: ${{ github.repository_owner != 'trafilea' }}
+              uses: actions/github-script@v3
+              with:
+                script: |
+                  core.setFailed('This reusable workflow can only be used by Trafilea.')
+
+    rollback:
+        needs: check_org
+        name: Deploy
+        runs-on: ubuntu-latest
+        
+        env:
+            AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
+            DD_API_KEY: ${{ secrets.TE_DD_API_KEY }}
+            DD_APP_KEY: ${{ secrets.TE_DD_APP_KEY }}
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                fetch-depth: 0
+            - run: |
+                git config --local --remove-section http."https://github.com/"
+                git config --global url."https://foo:${{ secrets.GH_WORKFLOW_TOKEN }}@github.com/trafilea".insteadOf "https://github.com/trafilea"
+      
+            - name: Configure AWS Credentials
+              id: oidc
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
+                aws-region: "${{ inputs.AWS_REGION }}"
+                output-credentials: true
+
+            - name: Assume Role in ENV Account
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                aws-region: "${{ inputs.AWS_REGION }}"
+                aws-access-key-id: ${{ steps.oidc.outputs.aws-access-key-id }}
+                aws-secret-access-key: ${{ steps.oidc.outputs.aws-secret-access-key }}
+                aws-session-token: ${{ steps.oidc.outputs.aws-session-token }}
+                role-to-assume: arn:aws:iam::${{ inputs.ENV_ACCOUNT_ID }}:role/terraform-admin-role
+
+            - name: Get current task definition
+              id: get-task-def
+              run: |
+                    TASK_DEFINITION=$(aws ecs describe-services --services ${{ inputs.APP_NAME }} --cluster ${{ inputs.CLUSTER_NAME }} --query "services[0].taskDefinition" --output text)
+                    echo "TASK_DEFINITION_ARN=${TASK_DEFINITION}" >> $GITHUB_ENV
+
+            - name: Deregister current task definition
+              run: |
+                    aws ecs deregister-task-definition --task-definition ${{ env.TASK_DEFINITION_ARN }}
+
+            - name: Get previous task definition
+              id: get-previous-task-def
+              run: |
+                    TASK_FAMILY=$(echo ${{ env.TASK_DEFINITION_ARN }} | cut -d'/' -f2 | cut -d':' -f1)
+                    PREVIOUS_TASK_DEFINITION=$(aws ecs list-task-definitions --family-prefix ${TASK_FAMILY} --sort DESC --max-items 2 --query "taskDefinitionArns[1]" --output text)
+                    echo "PREVIOUS_TASK_DEFINITION_ARN=${PREVIOUS_TASK_DEFINITION}" >> $GITHUB_ENV
+
+            - name: Update ECS service with previous task definition
+              run: |
+                    aws ecs update-service --cluster ${{ inputs.CLUSTER_NAME }} --service ${{ inputs.APP_NAME }} --task-definition ${{ env.PREVIOUS_TASK_DEFINITION_ARN }}
+
+            - name: Set argocd server
+              id: setdest
+              run: |
+                if [ ${{ inputs.ENVIRONMENT }}  == 'dev' ]; then echo "SERVER_ADDRESS=argo.development.trafilea.app" >> $GITHUB_OUTPUT; elif [ ${{ inputs.ENVIRONMENT }}  == 'stage' ]; then echo "SERVER_ADDRESS=argo.staging.trafilea.app" >> $GITHUB_OUTPUT; else echo "SERVER_ADDRESS=argo.production.trafilea.app" >> $GITHUB_OUTPUT; fi
+                sleep 5
+
+            - name: Rollback EKS with ArgoCD
+              run: |
+                ARGOCD_APP_NAME=${{ inputs.APP_NAME }}
+                argocd app rollback $ARGOCD_APP_NAME 1 --server ${{ steps.setdest.outputs.SERVER_ADDRESS }} --auth-token ${{ secrets.ARGOCD_TOKEN }}
