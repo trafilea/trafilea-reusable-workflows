@@ -90,7 +90,7 @@ jobs:
           
           echo "Generating ConfigMap..."
           kubectl create configmap $project_name_short-config --namespace=trafilea --from-env-file=./new-config/.env --dry-run=client -o yaml > ./new-config/configmap.yaml
-          cp ./new-config/configmap.yaml apps/overlays/$ENV/$APP_NAME/configmap.yaml
+          cp ./new-config/configmap.yaml configs/overlays/$ENV/$APP_NAME/configmap.yaml
           rm -rf ./new-config
           echo "ConfigMap generated successfully."
 
@@ -126,3 +126,11 @@ jobs:
           token: ${{ secrets.ARGOCD_TOKEN }}
           action: sync
           appName: applications
+
+      - name: Sync ArgoCD Application
+        uses: omegion/argocd-actions@v1
+        with:
+          address: ${{ steps.setdest.outputs.SERVER_ADDRESS }}
+          token: ${{ secrets.ARGOCD_TOKEN }}
+          action: sync
+          appName: configurations 

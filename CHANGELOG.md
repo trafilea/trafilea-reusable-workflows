@@ -1,6 +1,19 @@
-
 # Changelog
 All notable changes to this project will be documented on this file
+
+## [7.0.0] - 09/10/2024
+### Added
+- Added `deploy-static-frontend.yaml` workflow for pulling static frontend builds from bucket and uploading then to another bucket. Finally, invalidating the cloudfront cache.
+- Added `release-static-frontend.yaml` workflow for uploading a static frontend build to builds bucket.
+- Added `upload-static-frontend.yaml` workflow for uploading a static frontend build to the builds bucket, then, uploading it to the frontend s3 and invalidating cloudfront cache.
+
+## [6.5.2] - 20/09/2024
+### Added
+- Added DOCKERFILE_NAME input to `docker_build_and_push.yaml` for specifying the Dockerfile to use during build.
+
+## [6.5.1] - 04/09/2024
+### Added
+- Added DOCKERFILE_NAME input to `docker_release.yaml` for specifying the Dockerfile to use during build.
 
 ## [6.3.0] - 07/08/2024
 ### Modified

@@ -130,6 +130,6 @@ jobs:
       
       - name: Update Event Targets
         run: |
-          jq --arg new_arn "$new_task_def_arn" '.Targets[].EcsParameters.TaskDefinitionArn = $new_arn' targets.json > updated-targets.json
+          jq --arg new_Arn "$new_task_def_arn" '.Targets[0].EcsParameters.TaskDefinitionArn = $new_Arn' targets.json > updated-targets.json
           aws events put-targets --rule ${{ env.SCHEDULE_RULE_NAME }} --cli-input-json file://updated-targets.json
           echo "Targets updated"
