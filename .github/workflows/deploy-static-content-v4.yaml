@@ -12,9 +12,6 @@ on:
       PACKAGE_NAME:
         required: true
         type: string
-      PACKAGE_VERSION:
-        required: true
-        type: string
       CDN_BUCKET:
         required: true
         type: string
@@ -72,6 +69,12 @@ jobs:
           fetch-depth: 0
           path: ./.github/action-s3-deploy
 
+      - name: Set Image tag
+        id: set-image-tag
+        shell: bash
+        run: |
+          echo "image_tag=$(echo ${{ github.sha }} | cut -c1-12)" >> $GITHUB_OUTPUT
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
@@ -81,16 +84,16 @@ jobs:
 
       - name: Retrieve and Unzip Package
         env:
-          PACKAGE_FILE: ${{ inputs.PACKAGE_NAME}}-${{ inputs.PACKAGE_VERSION }}.zip
+          PACKAGE_FILE: ${{ inputs.PACKAGE_NAME}}-${{ steps.set-image-tag.outputs.image_tag }}.zip
           AWS_S3_BUCKET: ${{ inputs.BUILDS_BUCKET }}
           PROJECT_NAME: ${{ inputs.PACKAGE_NAME }}
         run: |
           aws s3 cp s3://$AWS_S3_BUCKET/$PROJECT_NAME/$PACKAGE_FILE $PACKAGE_FILE
-          mkdir -p content_br/ssr/${{ inputs.PACKAGE_VERSION }}/_next/br
-          mkdir -p content_gzip/ssr/${{ inputs.PACKAGE_VERSION }}/_next
+          mkdir -p content_br/ssr/${{ steps.set-image-tag.outputs.image_tag }}/_next/br
+          mkdir -p content_gzip/ssr/${{ steps.set-image-tag.outputs.image_tag }}/_next
           unzip $PACKAGE_FILE
-          cp -r .next/static content_br/ssr/${{ inputs.PACKAGE_VERSION }}/_next/br
-          cp -r .next/static content_gzip/ssr/${{ inputs.PACKAGE_VERSION }}/_next
+          cp -r .next/static content_br/ssr/${{ steps.set-image-tag.outputs.image_tag }}/_next/br
+          cp -r .next/static content_gzip/ssr/${{ steps.set-image-tag.outputs.image_tag }}/_next
           rm -rf .next
           rm -f $PACKAGE_FILE
 
