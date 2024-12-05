@@ -132,7 +132,14 @@ jobs:
           invalidation: /ssr
           delete-removed: false
 
+      - name: Clone preload action definition
+        uses: actions/checkout@v3
+        with:
+          repository: trafilea/action-trafilea-cdn-image-preload
+          fetch-depth: 0
+          path: ./.github/action-trafilea-cdn-image-preload
+
       - name: Preload images
-        uses: ./.github/trafilea-cdn-image-preload
+        uses: ./.github/action-trafilea-cdn-image-preload
         with:
           images: ./preload-images
