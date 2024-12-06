@@ -139,6 +139,7 @@ jobs:
           ref: 'main'
           fetch-depth: 0
           path: ./.github/action-trafilea-cdn-image-preload
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Preload images
         id: preload-images
