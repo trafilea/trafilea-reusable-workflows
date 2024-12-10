@@ -51,4 +51,4 @@ jobs:
         id: preload-images
         uses: ./.github/action-trafilea-cdn-image-preload
         with:
-          images: ${{PRELOAD_IMAGES_PATH}}
+          images: ${{inputs.PRELOAD_IMAGES_PATH}}
