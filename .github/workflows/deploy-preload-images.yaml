@@ -2,27 +2,7 @@ name: Deploy Static Content
 on:
   workflow_call:
     inputs:
-      BUILDS_BUCKET:
-        required: true
-        type: string
-      AWS_REGION:
-        required: false
-        default: 'us-east-1'
-        type: string
-      PACKAGE_NAME:
-        required: true
-        type: string
-      CDN_BUCKET:
-        required: true
-        type: string
-      CLOUDFRONT_ID:
-        required: true
-        type: string
-      CACHE_MAX_AGE:
-        required: false
-        type: string
-        default: '31536000'
-      ENVIRONMENT_ACCOUNT_ID:
+      PRELOAD_IMAGES_PATH:
         required: true
         type: string
 
@@ -52,9 +32,6 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
 
-    env:
-      AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3.1.0
@@ -74,4 +51,4 @@ jobs:
         id: preload-images
         uses: ./.github/action-trafilea-cdn-image-preload
         with:
-          images: ./preload-images
+          images: ${{PRELOAD_IMAGES_PATH}}
