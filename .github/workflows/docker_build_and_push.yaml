@@ -59,6 +59,7 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
+          token: ${{ secrets.GH_WORKFLOW_TOKEN }}          
 
       - name: Set Image tag
         id: set-image-tag
