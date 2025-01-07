@@ -104,11 +104,7 @@ jobs:
         uses: autero1/action-terragrunt@v3.0.2
         with:
           terragrunt-version: ${{ inputs.TERRAGRUNT_VERSION }}
-
-      - name: Terragrunt Plan
-        run: terragrunt run-all plan -lock=false --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
-        working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
-
+          
       - name: Terragrunt Apply
         run: terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color
         working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
