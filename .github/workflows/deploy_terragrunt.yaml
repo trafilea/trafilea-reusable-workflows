@@ -23,6 +23,10 @@ on:
         required: false
         default: terraform
         type: string
+      ABSOLUTE_INFRA_PATH:
+        required: false
+        default: ""
+        type: string        
       TERRAFORM_VERSION:
         required: false
         type: string
@@ -106,8 +110,14 @@ jobs:
           terragrunt-version: ${{ inputs.TERRAGRUNT_VERSION }}
           
       - name: Terragrunt Apply
+        if: ${{ inputs.ABSOLUTE_INFRA_PATH == ''}}
         run: terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color
         working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
+
+      - name: Terragrunt Apply (Abs path)
+        if: ${{ inputs.ABSOLUTE_INFRA_PATH != ''}}
+        run: terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color
+        working-directory: ${{ github.workspace }}/${{ inputs.ABSOLUTE_INFRA_PATH }}/
 
       - name: Datadog
         uses: masci/datadog@v1
