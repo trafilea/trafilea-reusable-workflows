@@ -64,6 +64,17 @@ on:
         required: false
         type: string
         default: ".env"
+      DATADOG_TEAM:
+        required: true
+        type: string
+      DATADOG_SERVICE:
+        required: false
+        type: string
+        default: ${{ inputs.APP_NAME }}
+      DOCKER_IMAGE_TAG:
+        required: false
+        type: string
+        default: ""
 
     secrets:
       GH_WORKFLOW_TOKEN:
@@ -79,6 +90,29 @@ on:
 
 
 jobs:
+  datadog_ci:
+    name: Datadog CI Configuration
+    runs-on: ubuntu-latest
+    env:
+      DATADOG_SITE: datadoghq.com
+      DATADOG_API_KEY: ${{ secrets.TE_DD_API_KEY }}
+      DD_TAGS: team:${{ inputs.DATADOG_TEAM }},service:${{ inputs.DATADOG_SERVICE }},env:${{ inputs.ENVIRONMENT }}
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Install datadog-ci
+        run: |
+          curl -L --fail "https://github.com/DataDog/datadog-ci/releases/latest/download/datadog-ci_linux-x64" --output "/usr/local/bin/datadog-ci"
+          chmod +x /usr/local/bin/datadog-ci
+
+      - name: Send Tags and Metadata to Datadog
+        run: |
+          datadog-ci tag --level pipeline
+          datadog-ci git-metadata upload
+
   deploy:
     needs: check_org
     name: Deploy
@@ -87,8 +121,9 @@ jobs:
     env:
       ENV: ${{ inputs.ENVIRONMENT }}
       APP_NAME: ${{ inputs.APP_NAME }}
-      D_API_KEY: ${{ secrets.TE_DD_API_KEY }}
+      DD_API_KEY: ${{ secrets.TE_DD_API_KEY }}
       DD_APP_KEY: ${{ secrets.TE_DD_APP_KEY }}
+      DOCKER_IMAGE_TAG: ${{ inputs.DOCKER_IMAGE_TAG }}
 
     steps:
       - name: Checkout code
@@ -122,12 +157,14 @@ jobs:
           git config --global url."https://foo:${{ secrets.GH_WORKFLOW_TOKEN }}@github.com/trafilea".insteadOf "https://github.com/trafilea"
 
       - name: Set Image tag
+        if: ${{ inputs.DOCKER_IMAGE_TAG == '' && inputs.ENVIRONMENT != 'prod' }}
         id: set-image-tag
         shell: bash
         run: |
-          echo "image_tag=$(echo ${{ github.sha }} | cut -c1-12)" >> $GITHUB_OUTPUT
+          echo "DOCKER_IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-12)" >> $GITHUB_ENV
       
       - name: Set LATEST tag
+        if: ${{ inputs.DOCKER_IMAGE_TAG == '' && inputs.ENVIRONMENT != 'prod' }}
         id: set-latest-tag
         shell: bash
         run: |
@@ -141,10 +178,12 @@ jobs:
           aws-region: "${{ inputs.AWS_REGION }}"
       
       - name: Login to Amazon ECR
+        if: ${{ inputs.DOCKER_IMAGE_TAG == 'null' || inputs.ENV_FILE_TYPE == 'all' }}
         id: login-container-registry
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and Push Container Image
+        if: ${{ inputs.DOCKER_IMAGE_TAG == 'null' || inputs.ENV_FILE_TYPE == 'all' }}
         id: build-container-image
         env:
           ECR_REGISTRY: ${{ steps.login-container-registry.outputs.registry }}
@@ -155,14 +194,15 @@ jobs:
           docker build . \
             ${{ inputs.DOCKER_BUILD_ARGS }} \
             --file ${{ inputs.DOCKERFILE_NAME }} \
-            --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$DOCKER_IMAGE_TAG
           docker tag \
-            $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }} \
+            $ECR_REGISTRY/$ECR_REPOSITORY:$DOCKER_IMAGE_TAG \
             $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$DOCKER_IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
       
       - name: Confirm Docker Image Push
+        if: ${{ inputs.DOCKER_IMAGE_TAG == 'null' || inputs.ENV_FILE_TYPE == 'all' }}
         uses: actions/github-script@v3
         env:
           IMAGE_TAG: ${{ steps.set-image-tag.outputs.image_tag }}
@@ -174,7 +214,7 @@ jobs:
       - name: Upload .env to S3
         env:
           project_name: ${{ inputs.APP_NAME }}
-          version: ${{ steps.set-image-tag.outputs.image_tag }}
+          version: ${{ env.DOCKER_IMAGE_TAG }}
           vars_directory: ${{ inputs.ENVIRONMENT_VARS_DIRECTORY }}
         run: |
           valid_types=("ecs" "eks" "all")
@@ -200,7 +240,7 @@ jobs:
       - name: Confirm .env file upload
         uses: actions/github-script@v3
         env:
-          IMAGE_TAG: ${{ steps.set-image-tag.outputs.image_tag }}
+          IMAGE_TAG: ${{ env.DOCKER_IMAGE_TAG }}
         with:
           script: |
             const imageTag = process.env.IMAGE_TAG;
@@ -211,7 +251,7 @@ jobs:
         env:
           project_name: ${{ inputs.APP_NAME }}
           project_name_short: ${{ inputs.APP_NAME_SHORT }}
-          version: ${{ steps.set-image-tag.outputs.image_tag }}
+          version: ${{ env.DOCKER_IMAGE_TAG }}
           environment: ${{ inputs.ENVIRONMENT }}
         run: |
           aws s3 cp s3://trafilea-apps-config/$project_name/eks/$environment/$version.env ./new-config/.env
@@ -230,7 +270,7 @@ jobs:
       - name: Terragrunt Apply
         if: steps.check-terraform-folder.outputs.terraform_folder == 'true'
         env:
-          TF_VAR_docker_image_tag: ${{ steps.set-image-tag.outputs.image_tag }}
+          TF_VAR_docker_image_tag: ${{ env.DOCKER_IMAGE_TAG }}
         run: |
           cd $INFRA_PATH/environment/$ENVIRONMENT
           terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color
@@ -254,7 +294,7 @@ jobs:
       - name: Replace Image Tag in Environment variables
         if: ${{ inputs.ENV_FILE_TYPE == 'ecs' || inputs.ENV_FILE_TYPE == 'all' }} && ${{ steps.check-terraform.outputs.exists == 'false' }}
         env:
-          NEW_TAG: ${{ steps.set-image-tag.outputs.image_tag }}
+          NEW_TAG: ${{ env.DOCKER_IMAGE_TAG }}
           APP: ${{ inputs.ECR_REPO_NAME }}
         run: |
           export OLD_TAG=$(jq -r '.containerDefinitions[0] | select(.image | contains("'"$APP"'")) | .image' task-definition.json | sed 's/.*://')
@@ -281,7 +321,7 @@ jobs:
       - name: Replace Image Tag
         if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
         env:
-          IMAGE_TAG: ${{ steps.set-image-tag.outputs.image_tag }}
+          IMAGE_TAG: ${{ env.DOCKER_IMAGE_TAG }}
         run: |
           OLD_TAG=$(cat apps/overlays/$ENV/$APP_NAME/$APP_NAME.yaml | grep tag: | awk '{print $2}')
           sed -i "s/tag: $OLD_TAG/tag: $IMAGE_TAG/g" apps/overlays/$ENV/$APP_NAME/$APP_NAME.yaml
