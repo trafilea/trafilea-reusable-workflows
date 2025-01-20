@@ -1,4 +1,4 @@
-name: ArgoCD Deployment
+name: API Deployment
 
 on:
   workflow_call:
@@ -246,27 +246,6 @@ jobs:
             const imageTag = process.env.IMAGE_TAG;
             core.info(`✅ .env file uploaded with tag ${imageTag} successfully!`);
       
-      - name: Generate new ConfigMap
-        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
-        env:
-          project_name: ${{ inputs.APP_NAME }}
-          project_name_short: ${{ inputs.APP_NAME_SHORT }}
-          version: ${{ env.DOCKER_IMAGE_TAG }}
-          environment: ${{ inputs.ENVIRONMENT }}
-        run: |
-          aws s3 cp s3://trafilea-apps-config/$project_name/eks/$environment/$version.env ./new-config/.env
-          echo "Environment variables copied successfully."
-
-          echo "Cleaning .env for ConfigMap generation ..."
-          sed -i 's/ *= */=/; s/"//g' new-config/.env
-          echo "Cleaning finished"
-          
-          echo "Generating ConfigMap..."
-          kubectl create configmap $project_name_short-config --namespace=trafilea --from-env-file=./new-config/.env --dry-run=client -o yaml > ./new-config/configmap.yaml
-          cp ./new-config/configmap.yaml configs/overlays/$ENV/$APP_NAME/configmap.yaml
-          rm -rf ./new-config
-          echo "ConfigMap generated successfully."
-
       - name: Terragrunt Apply
         if: steps.check-terraform-folder.outputs.terraform_folder == 'true'
         env:
@@ -288,15 +267,11 @@ jobs:
       - name: Download Task Definition
         if: ${{ inputs.ENV_FILE_TYPE == 'ecs' || inputs.ENV_FILE_TYPE == 'all' }} && ${{ steps.check-terraform.outputs.exists == 'false' }}
         id: download-task-def
-        run: |
-          aws ecs describe-task-definition --task-definition ${{ inputs.APP_NAME }}-task-def --query taskDefinition > task-definition.json
-      
-      - name: Replace Image Tag in Environment variables
-        if: ${{ inputs.ENV_FILE_TYPE == 'ecs' || inputs.ENV_FILE_TYPE == 'all' }} && ${{ steps.check-terraform.outputs.exists == 'false' }}
         env:
           NEW_TAG: ${{ env.DOCKER_IMAGE_TAG }}
           APP: ${{ inputs.ECR_REPO_NAME }}
         run: |
+          aws ecs describe-task-definition --task-definition ${{ inputs.APP_NAME }}-task-def --query taskDefinition > task-definition.json
           export OLD_TAG=$(jq -r '.containerDefinitions[0] | select(.image | contains("'"$APP"'")) | .image' task-definition.json | sed 's/.*://')
           jq -r '.' task-definition.json | sed "s/$OLD_TAG/$NEW_TAG/g" > temp_archivo.json && mv temp_archivo.json task-definition.json
 
@@ -317,32 +292,40 @@ jobs:
           ref: main
           fetch-depth: 0
           token: ${{ secrets.GH_WORKFLOW_TOKEN }}
+      
+      - name: Generate new ConfigMap
+        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
+        env:
+          project_name: ${{ inputs.APP_NAME }}
+          project_name_short: ${{ inputs.APP_NAME_SHORT }}
+          version: ${{ env.DOCKER_IMAGE_TAG }}
+          environment: ${{ inputs.ENVIRONMENT }}
+        run: |
+          aws s3 cp s3://trafilea-apps-config/$project_name/eks/$environment/$version.env ./new-config/.env
+          echo "Environment variables copied successfully."
 
-      - name: Replace Image Tag
+          echo "Cleaning .env for ConfigMap generation ..."
+          sed -i 's/ *= */=/; s/"//g' new-config/.env
+          echo "Cleaning finished"
+          
+          echo "Generating ConfigMap..."
+          kubectl create configmap $project_name_short-config --namespace=trafilea --from-env-file=./new-config/.env --dry-run=client -o yaml > ./new-config/configmap.yaml
+          cp ./new-config/configmap.yaml configs/overlays/$ENV/$APP_NAME/configmap.yaml
+          rm -rf ./new-config
+          echo "ConfigMap generated successfully."
+
+      - name: Update GitOps repository
         if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
         env:
           IMAGE_TAG: ${{ env.DOCKER_IMAGE_TAG }}
         run: |
           OLD_TAG=$(cat apps/overlays/$ENV/$APP_NAME/$APP_NAME.yaml | grep tag: | awk '{print $2}')
           sed -i "s/tag: $OLD_TAG/tag: $IMAGE_TAG/g" apps/overlays/$ENV/$APP_NAME/$APP_NAME.yaml
-
-      - name: Configure Git User creds
-        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
-        run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "Actions"
-
-      - name: Stage changes
-        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
-        run: git add .
-
-      - name: Commit new file
-        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
-        run: git diff-index --quiet HEAD || git commit -m "Updating $APP_NAME version on $ENV environment"
-
-      - name: Push changes
-        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
-        run: git push origin main
+          git add .
+          git diff-index --quiet HEAD || git commit -m "Updating $APP_NAME version on $ENV environment"
+          git push origin main
       
       - name: Set destination
         if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
