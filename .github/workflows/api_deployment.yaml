@@ -1,0 +1,330 @@
+name: ArgoCD Deployment
+
+on:
+  workflow_call:
+    inputs:
+      ENVIRONMENT:
+        required: true
+        type: string
+      APP_NAME:
+        required: true
+        type: string
+      APP_NAME_SHORT:
+        required: false
+        type: string
+        default: ${{ github.event.inputs.APP_NAME }}
+      AWS_REGION:
+        required: false
+        type: string
+        default: "us-east-1"
+      ENV_FILE_TYPE:
+        required: false
+        type: string
+        default: "all"
+      INFRA_PATH:
+        required: false
+        default: terraform
+        type: string   
+      TERRAFORM_VERSION:
+        required: false
+        type: string
+        default: 1.2.9
+      TERRAGRUNT_VERSION:
+        required: false
+        type: string
+        default: 0.36.12 
+      DOCKER_BUILD_ARGS:
+        required: false
+        type: string
+        default: "--progress plain --file Dockerfile"
+      DOCKERFILE_FOLDER:
+        required: false
+        type: string
+        default: '.'
+      DOCKERFILE_NAME:
+        required: false
+        type: string
+        default: 'Dockerfile'
+      ECS_CLUSTER_NAME:
+        required: false
+        default: "traf-engine-cluster"
+        type: string
+      ECR_REPO_NAME:
+        required: false
+        type: string
+        default: ${{ inputs.APP_NAME }}
+      ENV_ACCOUNT_ID:
+        required: true
+        type: string
+      ENVIRONMENT_VARS_DIRECTORY:
+        required: false
+        type: string
+        default: "configuration"
+      ENV_FILE_PREFIX:
+        required: false
+        type: string
+        default: ".env"
+
+    secrets:
+      GH_WORKFLOW_TOKEN:
+        required: true
+      ARGOCD_TOKEN:
+        required: true
+      OIDC_IAM_ROLE:
+        required: true
+      TE_DD_API_KEY:
+        required: true
+      TE_DD_APP_KEY:
+        required: false
+
+
+jobs:
+  deploy:
+    needs: check_org
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    env:
+      ENV: ${{ inputs.ENVIRONMENT }}
+      APP_NAME: ${{ inputs.APP_NAME }}
+      D_API_KEY: ${{ secrets.TE_DD_API_KEY }}
+      DD_APP_KEY: ${{ secrets.TE_DD_APP_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for Terraform directory
+        id: check-terraform-folder
+        run: |
+          if [ -d $INFRA_PATH ]; then
+            echo "terraform_folder=true" >> $GITHUB_OUTPUT
+          else
+            echo "terraform_folder=false" >> $GITHUB_OUTPUT
+
+      - name: Install Terraform
+        if: steps.check-terraform-folder.outputs.terraform_folder == 'true'
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+          terraform_version: ${{ inputs.TERRAFORM_VERSION }}
+
+      - name: Install Terragrunt
+        if: steps.check-terraform-folder.outputs.terraform_folder == 'true'
+        uses: autero1/action-terragrunt@v3.0.2
+        with:
+          terragrunt-version: ${{ inputs.TERRAGRUNT_VERSION }}
+      
+      - run: |
+          git config --local --remove-section http."https://github.com/"
+          git config --global url."https://foo:${{ secrets.GH_WORKFLOW_TOKEN }}@github.com/trafilea".insteadOf "https://github.com/trafilea"
+
+      - name: Set Image tag
+        id: set-image-tag
+        shell: bash
+        run: |
+          echo "image_tag=$(echo ${{ github.sha }} | cut -c1-12)" >> $GITHUB_OUTPUT
+      
+      - name: Set LATEST tag
+        id: set-latest-tag
+        shell: bash
+        run: |
+          if [ ${{ github.ref }}  == 'refs/heads/develop' ]; then echo "latest_tag=latest" >> $GITHUB_OUTPUT; else echo "latest_tag=latest-staging" >> $GITHUB_OUTPUT; fi
+  
+      - name: Configure AWS Credentials
+        id: oidc
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
+          aws-region: "${{ inputs.AWS_REGION }}"
+      
+      - name: Login to Amazon ECR
+        id: login-container-registry
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push Container Image
+        id: build-container-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-container-registry.outputs.registry }}
+          ECR_REPOSITORY: ${{ inputs.ECR_REPO_NAME }}
+          DOCKERFILE_FOLDER: ${{ inputs.DOCKERFILE_FOLDER }}
+        run: |
+          cd $DOCKERFILE_FOLDER
+          docker build . \
+            ${{ inputs.DOCKER_BUILD_ARGS }} \
+            --file ${{ inputs.DOCKERFILE_NAME }} \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
+          docker tag \
+            $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }} \
+            $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
+      
+      - name: Confirm Docker Image Push
+        uses: actions/github-script@v3
+        env:
+          IMAGE_TAG: ${{ steps.set-image-tag.outputs.image_tag }}
+        with:
+          script: |
+            const imageTag = process.env.IMAGE_TAG;
+            core.info(`✅ Docker Image uploaded with tag ${imageTag} successfully!`);
+      
+      - name: Upload .env to S3
+        env:
+          project_name: ${{ inputs.APP_NAME }}
+          version: ${{ steps.set-image-tag.outputs.image_tag }}
+          vars_directory: ${{ inputs.ENVIRONMENT_VARS_DIRECTORY }}
+        run: |
+          valid_types=("ecs" "eks" "all")
+          if [[ ! "${valid_types[@]}" =~ "${{ inputs.ENV_FILE_TYPE }}" ]]; then
+            echo "Invalid ENV_FILE_TYPE specified. Supported types are 'ecs', 'eks', or 'all'."
+            exit 1
+          fi
+
+          if [[ "${{ inputs.ENV_FILE_TYPE }}" == "ecs" || "${{ inputs.ENV_FILE_TYPE }}" == "all" ]]; then
+            echo "Uploading ECS environment files..."
+            sed -i -e 's/^[[:space:]]*\([^[:space:]=]*\)[[:space:]]*=[[:space:]]*/\1=/' -e 's/"\(.*\)"[[:space:]]*$/\1/' $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.dev && aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.dev s3://trafilea-apps-config/$project_name/ecs/dev/$version.env
+            sed -i -e 's/^[[:space:]]*\([^[:space:]=]*\)[[:space:]]*=[[:space:]]*/\1=/' -e 's/"\(.*\)"[[:space:]]*$/\1/' $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.stage && aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.stage s3://trafilea-apps-config/$project_name/ecs/stage/$version.env
+            sed -i -e 's/^[[:space:]]*\([^[:space:]=]*\)[[:space:]]*=[[:space:]]*/\1=/' -e 's/"\(.*\)"[[:space:]]*$/\1/' $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.prod && aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.prod s3://trafilea-apps-config/$project_name/ecs/prod/$version.env
+          fi
+
+          if [[ "${{ inputs.ENV_FILE_TYPE }}" == "eks" || "${{ inputs.ENV_FILE_TYPE }}" == "all" ]]; then
+            echo "Uploading EKS environment files..."
+            aws s3 cp $vars_directory/eks/${{ inputs.ENV_FILE_PREFIX }}.dev s3://trafilea-apps-config/$project_name/eks/dev/$version.env
+            aws s3 cp $vars_directory/eks/${{ inputs.ENV_FILE_PREFIX }}.stage s3://trafilea-apps-config/$project_name/eks/stage/$version.env
+            aws s3 cp $vars_directory/eks/${{ inputs.ENV_FILE_PREFIX }}.prod s3://trafilea-apps-config/$project_name/eks/prod/$version.env
+          fi
+
+      - name: Confirm .env file upload
+        uses: actions/github-script@v3
+        env:
+          IMAGE_TAG: ${{ steps.set-image-tag.outputs.image_tag }}
+        with:
+          script: |
+            const imageTag = process.env.IMAGE_TAG;
+            core.info(`✅ .env file uploaded with tag ${imageTag} successfully!`);
+      
+      - name: Generate new ConfigMap
+        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
+        env:
+          project_name: ${{ inputs.APP_NAME }}
+          project_name_short: ${{ inputs.APP_NAME_SHORT }}
+          version: ${{ steps.set-image-tag.outputs.image_tag }}
+          environment: ${{ inputs.ENVIRONMENT }}
+        run: |
+          aws s3 cp s3://trafilea-apps-config/$project_name/eks/$environment/$version.env ./new-config/.env
+          echo "Environment variables copied successfully."
+
+          echo "Cleaning .env for ConfigMap generation ..."
+          sed -i 's/ *= */=/; s/"//g' new-config/.env
+          echo "Cleaning finished"
+          
+          echo "Generating ConfigMap..."
+          kubectl create configmap $project_name_short-config --namespace=trafilea --from-env-file=./new-config/.env --dry-run=client -o yaml > ./new-config/configmap.yaml
+          cp ./new-config/configmap.yaml configs/overlays/$ENV/$APP_NAME/configmap.yaml
+          rm -rf ./new-config
+          echo "ConfigMap generated successfully."
+
+      - name: Terragrunt Apply
+        if: steps.check-terraform-folder.outputs.terraform_folder == 'true'
+        env:
+          TF_VAR_docker_image_tag: ${{ steps.set-image-tag.outputs.image_tag }}
+        run: |
+          cd $INFRA_PATH/environment/$ENVIRONMENT
+          terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color
+      
+      - name: Assume Role in ENV Account
+        if: ${{ inputs.ENV_FILE_TYPE == 'ecs' || inputs.ENV_FILE_TYPE == 'all' }} && ${{ steps.check-terraform.outputs.exists == 'false' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: "${{ inputs.AWS_REGION }}"
+          aws-access-key-id: ${{ steps.oidc.outputs.aws-access-key-id }}
+          aws-secret-access-key: ${{ steps.oidc.outputs.aws-secret-access-key }}
+          aws-session-token: ${{ steps.oidc.outputs.aws-session-token }}
+          role-to-assume: arn:aws:iam::${{ inputs.ENV_ACCOUNT_ID }}:role/terraform-admin-role
+      
+      - name: Download Task Definition
+        if: ${{ inputs.ENV_FILE_TYPE == 'ecs' || inputs.ENV_FILE_TYPE == 'all' }} && ${{ steps.check-terraform.outputs.exists == 'false' }}
+        id: download-task-def
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ inputs.APP_NAME }}-task-def --query taskDefinition > task-definition.json
+      
+      - name: Replace Image Tag in Environment variables
+        if: ${{ inputs.ENV_FILE_TYPE == 'ecs' || inputs.ENV_FILE_TYPE == 'all' }} && ${{ steps.check-terraform.outputs.exists == 'false' }}
+        env:
+          NEW_TAG: ${{ steps.set-image-tag.outputs.image_tag }}
+          APP: ${{ inputs.ECR_REPO_NAME }}
+        run: |
+          export OLD_TAG=$(jq -r '.containerDefinitions[0] | select(.image | contains("'"$APP"'")) | .image' task-definition.json | sed 's/.*://')
+          jq -r '.' task-definition.json | sed "s/$OLD_TAG/$NEW_TAG/g" > temp_archivo.json && mv temp_archivo.json task-definition.json
+
+      - name: Deploy Amazon ECS Task Definition
+        if: ${{ inputs.ENV_FILE_TYPE == 'ecs' || inputs.ENV_FILE_TYPE == 'all' }} && ${{ steps.check-terraform.outputs.exists == 'false' }}
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: task-definition.json
+          service: ${{ inputs.APP_NAME }}-service
+          cluster: ${{ inputs.ECS_CLUSTER_NAME }}
+          wait-for-service-stability: false
+      
+      - name: Clone GitOps Repo
+        uses: actions/checkout@v3
+        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
+        with:
+          repository: trafilea/trafilea-gitops
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GH_WORKFLOW_TOKEN }}
+
+      - name: Replace Image Tag
+        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
+        env:
+          IMAGE_TAG: ${{ steps.set-image-tag.outputs.image_tag }}
+        run: |
+          OLD_TAG=$(cat apps/overlays/$ENV/$APP_NAME/$APP_NAME.yaml | grep tag: | awk '{print $2}')
+          sed -i "s/tag: $OLD_TAG/tag: $IMAGE_TAG/g" apps/overlays/$ENV/$APP_NAME/$APP_NAME.yaml
+
+      - name: Configure Git User creds
+        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "Actions"
+
+      - name: Stage changes
+        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
+        run: git add .
+
+      - name: Commit new file
+        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
+        run: git diff-index --quiet HEAD || git commit -m "Updating $APP_NAME version on $ENV environment"
+
+      - name: Push changes
+        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
+        run: git push origin main
+      
+      - name: Set destination
+        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
+        id: setdest
+        run: |
+          if [ $ENV  == 'dev' ]; then echo "SERVER_ADDRESS=argo.development.trafilea.app" >> $GITHUB_OUTPUT; elif [ $ENV  == 'stage' ]; then echo "SERVER_ADDRESS=argo.staging.trafilea.app" >> $GITHUB_OUTPUT; else echo "SERVER_ADDRESS=argo.production.trafilea.app" >> $GITHUB_OUTPUT; fi
+          sleep 5
+
+      - name: Sync ArgoCD Application
+        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
+        uses: omegion/argocd-actions@v1
+        with:
+          address: ${{ steps.setdest.outputs.SERVER_ADDRESS }}
+          token: ${{ secrets.ARGOCD_TOKEN }}
+          action: sync
+          appName: applications
+
+      - name: Sync ArgoCD Application Configurations
+        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
+        uses: omegion/argocd-actions@v1
+        with:
+          address: ${{ steps.setdest.outputs.SERVER_ADDRESS }}
+          token: ${{ secrets.ARGOCD_TOKEN }}
+          action: sync
+          appName: configurations 
