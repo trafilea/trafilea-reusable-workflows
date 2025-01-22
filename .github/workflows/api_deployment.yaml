@@ -77,6 +77,8 @@ on:
         default: ""
 
     secrets:
+      OIDC_IAM_ROLE:
+        required: true
       GH_WORKFLOW_TOKEN:
         required: true
       ARGOCD_TOKEN:
