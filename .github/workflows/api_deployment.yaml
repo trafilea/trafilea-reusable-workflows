@@ -114,7 +114,6 @@ jobs:
           datadog-ci git-metadata upload
 
   deploy:
-    needs: check_org
     name: Deploy
     runs-on: ubuntu-latest
 
