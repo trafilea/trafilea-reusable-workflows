@@ -53,6 +53,10 @@ on:
         required: false
         type: string
         default: ${{ inputs.APP_NAME }}
+      TASK_DEFINITION_PREFIX:
+        required: false
+        type: string
+        default: ${{ inputs.APP_NAME }}
       ENV_ACCOUNT_ID:
         required: true
         type: string
@@ -270,7 +274,7 @@ jobs:
           NEW_TAG: ${{ env.DOCKER_IMAGE_TAG }}
           APP: ${{ inputs.ECR_REPO_NAME }}
         run: |
-          aws ecs describe-task-definition --task-definition ${{ inputs.APP_NAME }}-task-def --query taskDefinition > task-definition.json
+          aws ecs describe-task-definition --task-definition ${{ inputs.TASK_DEFINITION_PREFIX }}-task-def --query taskDefinition > task-definition.json
           export OLD_TAG=$(jq -r '.containerDefinitions[0] | select(.image | contains("'"$APP"'")) | .image' task-definition.json | sed 's/.*://')
           jq -r '.' task-definition.json | sed "s/$OLD_TAG/$NEW_TAG/g" > temp_archivo.json && mv temp_archivo.json task-definition.json
 
@@ -279,7 +283,7 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: task-definition.json
-          service: ${{ inputs.APP_NAME }}-service
+          service: ${{ inputs.TASK_DEFINITION_PREFIX }}-service
           cluster: ${{ inputs.ECS_CLUSTER_NAME }}
           wait-for-service-stability: false
       
