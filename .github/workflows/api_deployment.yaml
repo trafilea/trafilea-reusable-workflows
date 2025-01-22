@@ -176,12 +176,12 @@ jobs:
           aws-region: "${{ inputs.AWS_REGION }}"
       
       - name: Login to Amazon ECR
-        if: ${{ inputs.DOCKER_IMAGE_TAG == '' || inputs.ENVIRONMENT != 'prod' }}
+        if: ${{ inputs.DOCKER_IMAGE_TAG == '' && inputs.ENVIRONMENT != 'prod' }}
         id: login-container-registry
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and Push Container Image
-        if: ${{ inputs.DOCKER_IMAGE_TAG == '' || inputs.ENVIRONMENT != 'prod' }}
+        if: ${{ inputs.DOCKER_IMAGE_TAG == '' && inputs.ENVIRONMENT != 'prod' }}
         id: build-container-image
         env:
           ECR_REGISTRY: ${{ steps.login-container-registry.outputs.registry }}
@@ -200,7 +200,7 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
       
       - name: Confirm Docker Image Push
-        if: ${{ inputs.DOCKER_IMAGE_TAG == '' || inputs.ENVIRONMENT != 'prod' }}
+        if: ${{ inputs.DOCKER_IMAGE_TAG == '' && inputs.ENVIRONMENT != 'prod' }}
         uses: actions/github-script@v3
         env:
           IMAGE_TAG: ${{ steps.set-image-tag.outputs.image_tag }}
