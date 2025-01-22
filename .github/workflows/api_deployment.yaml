@@ -83,8 +83,6 @@ on:
         required: true
       ARGOCD_TOKEN:
         required: true
-      OIDC_IAM_ROLE:
-        required: true
       TE_DD_API_KEY:
         required: true
       TE_DD_APP_KEY:
