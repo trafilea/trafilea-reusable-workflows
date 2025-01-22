@@ -208,6 +208,7 @@ jobs:
             core.info(`✅ Docker Image uploaded with tag ${imageTag} successfully!`);
       
       - name: Upload .env to S3
+        if: steps.check-terraform-folder.outputs.terraform_folder == 'false'
         env:
           project_name: ${{ inputs.APP_NAME }}
           version: ${{ env.DOCKER_IMAGE_TAG }}
@@ -234,6 +235,7 @@ jobs:
           fi
 
       - name: Confirm .env file upload
+        if: steps.check-terraform-folder.outputs.terraform_folder == 'false'
         uses: actions/github-script@v3
         env:
           IMAGE_TAG: ${{ env.DOCKER_IMAGE_TAG }}
@@ -290,7 +292,7 @@ jobs:
           token: ${{ secrets.GH_WORKFLOW_TOKEN }}
       
       - name: Generate new ConfigMap
-        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }}
+        if: ${{ inputs.ENV_FILE_TYPE == 'eks' || inputs.ENV_FILE_TYPE == 'all' }} && ${{ steps.check-terraform.outputs.terraform_folder == 'false' }}
         env:
           project_name: ${{ inputs.APP_NAME }}
           project_name_short: ${{ inputs.APP_NAME_SHORT }}
