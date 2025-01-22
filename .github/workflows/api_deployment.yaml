@@ -133,10 +133,7 @@ jobs:
       - name: Check for Terraform directory
         id: check-terraform-folder
         run: |
-          if [ -d $INFRA_PATH ]; then
-            echo "terraform_folder=true" >> $GITHUB_OUTPUT
-          else
-            echo "terraform_folder=false" >> $GITHUB_OUTPUT
+          if [ -d "$INFRA_PATH" ]; then echo "terraform_folder=true" >> $GITHUB_OUTPUT; else echo "terraform_folder=false" >> $GITHUB_OUTPUT; fi
 
       - name: Install Terraform
         if: steps.check-terraform-folder.outputs.terraform_folder == 'true'
