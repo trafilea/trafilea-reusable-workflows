@@ -174,12 +174,12 @@ jobs:
           aws-region: "${{ inputs.AWS_REGION }}"
       
       - name: Login to Amazon ECR
-        if: ${{ inputs.DOCKER_IMAGE_TAG == 'null' || inputs.ENV_FILE_TYPE == 'all' }}
+        if: ${{ inputs.DOCKER_IMAGE_TAG == '' || inputs.ENVIRONMENT != 'prod' }}
         id: login-container-registry
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and Push Container Image
-        if: ${{ inputs.DOCKER_IMAGE_TAG == 'null' || inputs.ENV_FILE_TYPE == 'all' }}
+        if: ${{ inputs.DOCKER_IMAGE_TAG == '' || inputs.ENVIRONMENT != 'prod' }}
         id: build-container-image
         env:
           ECR_REGISTRY: ${{ steps.login-container-registry.outputs.registry }}
@@ -198,7 +198,7 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
       
       - name: Confirm Docker Image Push
-        if: ${{ inputs.DOCKER_IMAGE_TAG == 'null' || inputs.ENV_FILE_TYPE == 'all' }}
+        if: ${{ inputs.DOCKER_IMAGE_TAG == '' || inputs.ENVIRONMENT != 'prod' }}
         uses: actions/github-script@v3
         env:
           IMAGE_TAG: ${{ steps.set-image-tag.outputs.image_tag }}
@@ -251,7 +251,7 @@ jobs:
           terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color
       
       - name: Assume Role in ENV Account
-        if: ${{ inputs.ENV_FILE_TYPE == 'ecs' || inputs.ENV_FILE_TYPE == 'all' }} && ${{ steps.check-terraform.outputs.exists == 'false' }}
+        if: ${{ inputs.ENV_FILE_TYPE == 'ecs' || inputs.ENV_FILE_TYPE == 'all' }} && ${{ steps.check-terraform.outputs.terraform_folder == 'false' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: "${{ inputs.AWS_REGION }}"
@@ -261,7 +261,7 @@ jobs:
           role-to-assume: arn:aws:iam::${{ inputs.ENV_ACCOUNT_ID }}:role/terraform-admin-role
       
       - name: Download Task Definition
-        if: ${{ inputs.ENV_FILE_TYPE == 'ecs' || inputs.ENV_FILE_TYPE == 'all' }} && ${{ steps.check-terraform.outputs.exists == 'false' }}
+        if: ${{ inputs.ENV_FILE_TYPE == 'ecs' || inputs.ENV_FILE_TYPE == 'all' }} && ${{ steps.check-terraform.outputs.terraform_folder == 'false' }}
         id: download-task-def
         env:
           NEW_TAG: ${{ env.DOCKER_IMAGE_TAG }}
@@ -272,7 +272,7 @@ jobs:
           jq -r '.' task-definition.json | sed "s/$OLD_TAG/$NEW_TAG/g" > temp_archivo.json && mv temp_archivo.json task-definition.json
 
       - name: Deploy Amazon ECS Task Definition
-        if: ${{ inputs.ENV_FILE_TYPE == 'ecs' || inputs.ENV_FILE_TYPE == 'all' }} && ${{ steps.check-terraform.outputs.exists == 'false' }}
+        if: ${{ inputs.ENV_FILE_TYPE == 'ecs' || inputs.ENV_FILE_TYPE == 'all' }} && ${{ steps.check-terraform.outputs.terraform_folder == 'false' }}
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: task-definition.json
