@@ -269,7 +269,7 @@ jobs:
           terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color
       
       - name: Assume Role in ENV Account
-        if: ${{ (steps.check-platform.outputs.ecs_enabled == 'true') && (steps.check-terraform.outputs.terraform_folder == 'false') }}
+        if: ${{ (steps.check-platform.outputs.ecs_enabled == 'true') && (steps.check-terraform-folder.outputs.terraform_folder == 'false') }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: "${{ inputs.AWS_REGION }}"
@@ -279,7 +279,7 @@ jobs:
           role-to-assume: arn:aws:iam::${{ inputs.ENV_ACCOUNT_ID }}:role/terraform-admin-role
       
       - name: Download Task Definition
-        if: ${{ (steps.check-platform.outputs.ecs_enabled == 'true') && (steps.check-terraform.outputs.terraform_folder == 'false') }}
+        if: ${{ (steps.check-platform.outputs.ecs_enabled == 'true') && (steps.check-terraform-folder.outputs.terraform_folder == 'false') }}
         id: download-task-def
         env:
           NEW_TAG: ${{ env.DOCKER_IMAGE_TAG }}
@@ -290,7 +290,7 @@ jobs:
           jq -r '.' task-definition.json | sed "s/$OLD_TAG/$NEW_TAG/g" > temp_archivo.json && mv temp_archivo.json task-definition.json
 
       - name: Deploy Amazon ECS Task Definition
-        if: ${{ (steps.check-platform.outputs.ecs_enabled == 'true') && (steps.check-terraform.outputs.terraform_folder == 'false') }}
+        if: ${{ (steps.check-platform.outputs.ecs_enabled == 'true') && (steps.check-terraform-folder.outputs.terraform_folder == 'false') }}
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: task-definition.json
@@ -308,7 +308,7 @@ jobs:
           token: ${{ secrets.GH_WORKFLOW_TOKEN }}
       
       - name: Generate new ConfigMap
-        if: ${{ (steps.check-platform.outputs.eks_enabled == 'true') && (steps.check-terraform.outputs.terraform_folder == 'false') }}
+        if: ${{ (steps.check-platform.outputs.eks_enabled == 'true') && (steps.check-terraform-folder.outputs.terraform_folder == 'false') }}
         env:
           project_name: ${{ inputs.APP_NAME }}
           project_name_short: ${{ inputs.APP_NAME_SHORT }}
