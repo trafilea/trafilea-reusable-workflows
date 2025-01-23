@@ -267,7 +267,7 @@ jobs:
           terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color
       
       - name: Assume Role in ENV Account
-        if: ${{ (step.check-platform.outputs.ecs_enabled == 'true') && (steps.check-terraform.outputs.terraform_folder == 'false') }}
+        if: ${{ (steps.check-platform.outputs.ecs_enabled == 'true') && (steps.check-terraform.outputs.terraform_folder == 'false') }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: "${{ inputs.AWS_REGION }}"
@@ -277,7 +277,7 @@ jobs:
           role-to-assume: arn:aws:iam::${{ inputs.ENV_ACCOUNT_ID }}:role/terraform-admin-role
       
       - name: Download Task Definition
-        if: ${{ (step.check-platform.outputs.ecs_enabled == 'true') && (steps.check-terraform.outputs.terraform_folder == 'false') }}
+        if: ${{ (steps.check-platform.outputs.ecs_enabled == 'true') && (steps.check-terraform.outputs.terraform_folder == 'false') }}
         id: download-task-def
         env:
           NEW_TAG: ${{ env.DOCKER_IMAGE_TAG }}
@@ -288,7 +288,7 @@ jobs:
           jq -r '.' task-definition.json | sed "s/$OLD_TAG/$NEW_TAG/g" > temp_archivo.json && mv temp_archivo.json task-definition.json
 
       - name: Deploy Amazon ECS Task Definition
-        if: ${{ (step.check-platform.outputs.ecs_enabled == 'true') && (steps.check-terraform.outputs.terraform_folder == 'false') }}
+        if: ${{ (steps.check-platform.outputs.ecs_enabled == 'true') && (steps.check-terraform.outputs.terraform_folder == 'false') }}
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: task-definition.json
@@ -298,7 +298,7 @@ jobs:
       
       - name: Clone GitOps Repo
         uses: actions/checkout@v3
-        if: ${{ step.check-platform.outputs.eks_enabled == 'true' }}
+        if: ${{ steps.check-platform.outputs.eks_enabled == 'true' }}
         with:
           repository: trafilea/trafilea-gitops
           ref: main
@@ -306,7 +306,7 @@ jobs:
           token: ${{ secrets.GH_WORKFLOW_TOKEN }}
       
       - name: Generate new ConfigMap
-        if: ${{ (step.check-platform.outputs.eks_enabled == 'true') && (steps.check-terraform.outputs.terraform_folder == 'false') }}
+        if: ${{ (steps.check-platform.outputs.eks_enabled == 'true') && (steps.check-terraform.outputs.terraform_folder == 'false') }}
         env:
           project_name: ${{ inputs.APP_NAME }}
           project_name_short: ${{ inputs.APP_NAME_SHORT }}
@@ -327,7 +327,7 @@ jobs:
           echo "ConfigMap generated successfully."
 
       - name: Update GitOps repository
-        if: ${{ step.check-platform.outputs.eks_enabled == 'true' }}
+        if: ${{ steps.check-platform.outputs.eks_enabled == 'true' }}
         env:
           IMAGE_TAG: ${{ env.DOCKER_IMAGE_TAG }}
         run: |
@@ -340,14 +340,14 @@ jobs:
           git push origin main
       
       - name: Set destination
-        if: ${{ step.check-platform.outputs.eks_enabled == 'true' }}
+        if: ${{ steps.check-platform.outputs.eks_enabled == 'true' }}
         id: setdest
         run: |
           if [ $ENV  == 'dev' ]; then echo "SERVER_ADDRESS=argo.development.trafilea.app" >> $GITHUB_OUTPUT; elif [ $ENV  == 'stage' ]; then echo "SERVER_ADDRESS=argo.staging.trafilea.app" >> $GITHUB_OUTPUT; else echo "SERVER_ADDRESS=argo.production.trafilea.app" >> $GITHUB_OUTPUT; fi
           sleep 5
 
       - name: Sync ArgoCD Application
-        if: ${{ step.check-platform.outputs.eks_enabled == 'true' }}
+        if: ${{ steps.check-platform.outputs.eks_enabled == 'true' }}
         uses: omegion/argocd-actions@v1
         with:
           address: ${{ steps.setdest.outputs.SERVER_ADDRESS }}
@@ -356,7 +356,7 @@ jobs:
           appName: applications
 
       - name: Sync ArgoCD Application Configurations
-        if: ${{ step.check-platform.outputs.eks_enabled == 'true' }}
+        if: ${{ steps.check-platform.outputs.eks_enabled == 'true' }}
         uses: omegion/argocd-actions@v1
         with:
           address: ${{ steps.setdest.outputs.SERVER_ADDRESS }}
