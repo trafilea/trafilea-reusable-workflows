@@ -297,7 +297,7 @@ jobs:
           token: ${{ secrets.GH_WORKFLOW_TOKEN }}
       
       - name: Generate new ConfigMap
-        if: ${{ (inputs.ENV_FILE_TYPE == 'eks') || (inputs.ENV_FILE_TYPE == 'all') }} && ${{ steps.check-terraform.outputs.terraform_folder == 'false' }}
+        if: ${{ ((inputs.ENV_FILE_TYPE == 'eks') || (inputs.ENV_FILE_TYPE == 'all')) && (steps.check-terraform.outputs.terraform_folder == 'false') }}
         env:
           project_name: ${{ inputs.APP_NAME }}
           project_name_short: ${{ inputs.APP_NAME_SHORT }}
