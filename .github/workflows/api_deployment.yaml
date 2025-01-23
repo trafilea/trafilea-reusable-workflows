@@ -147,7 +147,7 @@ jobs:
           if [ $PLATFORM == 'all' ]; then echo "ecs_enabled=true" >> $GITHUB_OUTPUT && echo "eks_enabled=true" >> $GITHUB_OUTPUT; fi
           if [ $PLATFORM == 'ecs' ]; then echo "ecs_enabled=true" >> $GITHUB_OUTPUT && echo "eks_enabled=false" >> $GITHUB_OUTPUT; fi
           if [ $PLATFORM == 'eks' ]; then echo "eks_enabled=true" >> $GITHUB_OUTPUT && echo "ecs_enabled=false" >> $GITHUB_OUTPUT; fi
-          echo $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
           echo $PLATFORM
 
       - name: Install Terraform
