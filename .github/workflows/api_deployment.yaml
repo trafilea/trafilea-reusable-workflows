@@ -334,7 +334,7 @@ jobs:
           IMAGE_TAG: ${{ env.DOCKER_IMAGE_TAG }}
         run: |
           OLD_TAG=$(cat apps/overlays/$ENV/$APP_NAME/$APP_NAME.yaml | grep tag: | awk '{print $2}')
-          sed -i "s/tag: $OLD_TAG/tag: $IMAGE_TAG/g" apps/overlays/$ENV/$APP_NAME/$APP_NAME.yaml
+          sed -i "s/tag: $OLD_TAG/tag: \"$IMAGE_TAG\"/g" apps/overlays/$ENV/$APP_NAME/$APP_NAME.yaml
           git config --global user.email "actions@github.com"
           git config --global user.name "Actions"
           git add .
