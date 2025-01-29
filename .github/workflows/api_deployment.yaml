@@ -348,6 +348,19 @@ jobs:
           if [ $ENV  == 'dev' ]; then echo "SERVER_ADDRESS=argo.development.trafilea.app" >> $GITHUB_OUTPUT; elif [ $ENV  == 'stage' ]; then echo "SERVER_ADDRESS=argo.staging.trafilea.app" >> $GITHUB_OUTPUT; else echo "SERVER_ADDRESS=argo.production.trafilea.app" >> $GITHUB_OUTPUT; fi
           sleep 5
 
+      - name: Sync ArgoCD Application Configurations
+        if: ${{ steps.check-platform.outputs.eks_enabled == 'true' }}
+        uses: omegion/argocd-actions@v1
+        with:
+          address: ${{ steps.setdest.outputs.SERVER_ADDRESS }}
+          token: ${{ secrets.ARGOCD_TOKEN }}
+          action: sync
+          appName: configurations 
+
+      - name: Wait a few seconds before updating code
+        run: |
+          sleep 10
+          
       - name: Sync ArgoCD Application
         if: ${{ steps.check-platform.outputs.eks_enabled == 'true' }}
         uses: omegion/argocd-actions@v1
@@ -357,11 +370,4 @@ jobs:
           action: sync
           appName: applications
 
-      - name: Sync ArgoCD Application Configurations
-        if: ${{ steps.check-platform.outputs.eks_enabled == 'true' }}
-        uses: omegion/argocd-actions@v1
-        with:
-          address: ${{ steps.setdest.outputs.SERVER_ADDRESS }}
-          token: ${{ secrets.ARGOCD_TOKEN }}
-          action: sync
-          appName: configurations 
+      
