@@ -32,6 +32,8 @@ on:
         default: 0.36.12          
 
     secrets:
+      OIDC_IAM_ROLE:
+        required: true
       GH_WORKFLOW_TOKEN:
         required: true
       DB_PASSWORD:

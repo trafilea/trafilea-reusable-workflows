@@ -26,6 +26,8 @@ on:
         type: string
 
     secrets:
+      OIDC_IAM_ROLE:
+        required: true
       GH_WORKFLOW_TOKEN:
         required: true
       TE_DD_API_KEY:

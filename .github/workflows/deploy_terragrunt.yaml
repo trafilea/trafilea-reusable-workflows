@@ -39,6 +39,8 @@ on:
     secrets:
       GH_WORKFLOW_TOKEN:
         required: true
+      OIDC_IAM_ROLE:
+        required: true
       TE_DD_API_KEY:
         required: true
       DB_PASSWORD:
