@@ -55,7 +55,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3.1.0
         with:
           submodules: true
           fetch-depth: 0
@@ -81,7 +81,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-container-registry
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v1
 
       - name: Build and Push Container Image
         id: build-container-image
