@@ -10,10 +10,6 @@ on:
         required: false
         type: string
         default: "us-east-1"
-      DOCKER_BUILD_ARGS:
-        required: false
-        type: string
-        default: "--file Dockerfile"
       DOCKERFILE_FOLDER:
         required: false
         type: string
@@ -94,7 +90,6 @@ jobs:
           docker build . \
             --build-arg GITHUB_TOKEN=${{ secrets.GH_RO_TOKEN }}
             ${{ inputs.DOCKER_BUILD_ARGS }} \
-            --file ${{ inputs.DOCKERFILE_NAME }} \
             --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
           docker tag \
             $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }} \
