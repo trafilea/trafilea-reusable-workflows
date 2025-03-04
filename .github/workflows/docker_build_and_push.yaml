@@ -23,10 +23,6 @@ on:
         type: string
         default: 'Dockerfile'
 
-    secrets:
-      GH_RO_TOKEN:
-        required: false
-
     outputs:
       image_tag:
         description: Image tag created on the workflow
