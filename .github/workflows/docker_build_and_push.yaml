@@ -90,7 +90,7 @@ jobs:
           docker build . \
             --build-arg GITHUB_TOKEN=${{ secrets.GH_RO_TOKEN }}
             ${{ inputs.DOCKER_BUILD_ARGS }} \
-            --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
           docker tag \
             $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }} \
             $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
