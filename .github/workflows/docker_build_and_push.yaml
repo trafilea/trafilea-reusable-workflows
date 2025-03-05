@@ -10,14 +10,10 @@ on:
         required: false
         type: string
         default: "us-east-1"
-      DOCKERFILE_FOLDER:
+      DOCKER_BUILD_ARGS:
         required: false
         type: string
-        default: '.'
-      DOCKERFILE_NAME:
-        required: false
-        type: string
-        default: 'Dockerfile'
+        default: "--progress plain --file Dockerfile"
 
     outputs:
       image_tag:
@@ -26,6 +22,14 @@ on:
       latest_tag:
         description: Latest tag created on the workflow
         value: ${{ jobs.build_n_push.outputs.latest_tag }}
+
+    secrets:
+      OPS_AWS_ACCESS_KEY_ID:
+        required: true
+      OPS_AWS_SECRET_ACCESS_KEY:
+        required: true
+      GH_WORKFLOW_TOKEN:
+        required: true
 
 jobs:
   check_org:
@@ -40,7 +44,6 @@ jobs:
           script: |
             core.setFailed('This reusable workflow can only be used by Trafilea.')
 
-
   build_n_push:
     needs: check_org
     name: Build and Push to ECR
@@ -51,11 +54,11 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3.1.0
         with:
           submodules: true
           fetch-depth: 0
-          token: ${{ secrets.GH_WORKFLOW_TOKEN }}          
+          token: ${{ secrets.GH_WORKFLOW_TOKEN }}
 
       - name: Set Image tag
         id: set-image-tag
@@ -67,30 +70,33 @@ jobs:
         id: set-latest-tag
         shell: bash
         run: |
-          if [ ${{ github.ref }}  == 'refs/heads/develop' ]; then echo "latest_tag=latest" >> $GITHUB_OUTPUT; else echo "latest_tag=latest-staging" >> $GITHUB_OUTPUT; fi
+          if [ ${{ github.ref }} == 'refs/heads/develop' ]; then
+            echo "latest_tag=latest-dev" >> $GITHUB_OUTPUT;
+          elif [ ${{ github.ref }} == 'refs/heads/master' ]; then
+            echo "latest_tag=latest-prod" >> $GITHUB_OUTPUT;
+          fi
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        id: configure-credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
-          role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
-          aws-region: "${{ inputs.AWS_REGION }}"
+          aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-container-registry
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v1
 
       - name: Build and Push Container Image
         id: build-container-image
         env:
           ECR_REGISTRY: ${{ steps.login-container-registry.outputs.registry }}
           ECR_REPOSITORY: ${{ inputs.APP_NAME }}
-          DOCKERFILE_FOLDER: ${{ inputs.DOCKERFILE_FOLDER }}
         run: |
-          cd $DOCKERFILE_FOLDER
           docker build . \
-            --build-arg GITHUB_TOKEN=${{ secrets.GH_RO_TOKEN }}
             ${{ inputs.DOCKER_BUILD_ARGS }} \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }}
           docker tag \
             $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-image-tag.outputs.image_tag }} \
             $ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.set-latest-tag.outputs.latest_tag }}
