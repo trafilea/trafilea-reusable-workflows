@@ -7,7 +7,7 @@ on:
         type: string
       AWS_REGION:
         required: false
-        default: "us-east-1"
+        default: 'us-east-1'
         type: string
       PACKAGE_NAME:
         required: true
@@ -24,7 +24,7 @@ on:
       CACHE_MAX_AGE:
         required: false
         type: string
-        default: "31536000"
+        default: '31536000'
       ENVIRONMENT_ACCOUNT_ID:
         required: true
         type: string
@@ -77,7 +77,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY }}
-          aws-region: "${{ inputs.AWS_REGION }}"
+          aws-region: '${{ inputs.AWS_REGION }}'
 
       - name: Retrieve and Unzip Package
         env:
@@ -100,7 +100,7 @@ jobs:
           aws-access-key-id: ${{ secrets.OPS_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.OPS_AWS_SECRET_ACCESS_KEY  }}
           role-to-assume: arn:aws:iam::${{ inputs.ENVIRONMENT_ACCOUNT_ID }}:role/terraform-admin-role
-          aws-region: "${{ inputs.AWS_REGION }}"
+          aws-region: '${{ inputs.AWS_REGION }}'
           role-duration-seconds: 3600
 
       - name: S3 Upload and Cloudfront Invalidation for Gzip
@@ -112,7 +112,7 @@ jobs:
           private: true
           content-encoding: gzip
           dist-id: ${{ inputs.CLOUDFRONT_ID }}
-          cache: ${{ inputs.CACHE_MAX_AGE }}
+          cache-control: max-age=${{ inputs.CACHE_MAX_AGE }}, stale-while-revalidate=600, stale-if-error=86400
           invalidation: /ssr
           delete-removed: false
 
@@ -125,6 +125,6 @@ jobs:
           private: true
           content-encoding: br
           dist-id: ${{ inputs.CLOUDFRONT_ID }}
-          cache: ${{ inputs.CACHE_MAX_AGE }}
+          cache-control: max-age=${{ inputs.CACHE_MAX_AGE }}, stale-while-revalidate=600, stale-if-error=86400
           invalidation: /ssr
           delete-removed: false
