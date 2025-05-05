@@ -88,13 +88,6 @@ jobs:
             sed -i -e 's/^[[:space:]]*\([^[:space:]=]*\)[[:space:]]*=[[:space:]]*/\1=/' -e 's/"\(.*\)"[[:space:]]*$/\1/' $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.prod && aws s3 cp $vars_directory/ecs/${{ inputs.ENV_FILE_PREFIX }}.prod s3://trafilea-apps-config/$project_name/ecs/prod/$version.env
           fi
 
-          if [[ "${{ inputs.ENV_FILE_TYPE }}" == "lambda" ]]; then
-            echo "Uploading Lambda environment files..."
-            sed -i -e 's/^[[:space:]]*\([^[:space:]=]*\)[[:space:]]*=[[:space:]]*/\1=/' -e 's/"\(.*\)"[[:space:]]*$/\1/' $vars_directory/lambda/${{ inputs.ENV_FILE_PREFIX }}.dev && aws s3 cp $vars_directory/lambda/${{ inputs.ENV_FILE_PREFIX }}.dev s3://trafilea-apps-config/$project_name/lambda/dev/$version.env
-            sed -i -e 's/^[[:space:]]*\([^[:space:]=]*\)[[:space:]]*=[[:space:]]*/\1=/' -e 's/"\(.*\)"[[:space:]]*$/\1/' $vars_directory/lambda/${{ inputs.ENV_FILE_PREFIX }}.stage && aws s3 cp $vars_directory/lambda/${{ inputs.ENV_FILE_PREFIX }}.stage s3://trafilea-apps-config/$project_name/lambda/stage/$version.env
-            sed -i -e 's/^[[:space:]]*\([^[:space:]=]*\)[[:space:]]*=[[:space:]]*/\1=/' -e 's/"\(.*\)"[[:space:]]*$/\1/' $vars_directory/lambda/${{ inputs.ENV_FILE_PREFIX }}.prod && aws s3 cp $vars_directory/lambda/${{ inputs.ENV_FILE_PREFIX }}.prod s3://trafilea-apps-config/$project_name/lambda/prod/$version.env
-          fi
-
           if [[ "${{ inputs.ENV_FILE_TYPE }}" == "eks" || "${{ inputs.ENV_FILE_TYPE }}" == "all" ]]; then
             echo "Uploading EKS environment files..."
             aws s3 cp $vars_directory/eks/${{ inputs.ENV_FILE_PREFIX }}.dev s3://trafilea-apps-config/$project_name/eks/dev/$version.env
