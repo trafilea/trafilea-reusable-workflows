@@ -110,5 +110,5 @@ jobs:
           PACKAGE_NAME: ${{ inputs.PACKAGE_NAME }}
           VERSION: ${{ inputs.VERSION }}
         run: |
-          aws cloudfront create-invalidation --distribution-id ${{ inputs.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"//$AWS_S3_BUCKET/$PROJECT_NAME/$PACKAGE_FILE
+          aws cloudfront create-invalidation --distribution-id ${{ inputs.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
           rm -f $PACKAGE_NAME-$VERSION.zip
