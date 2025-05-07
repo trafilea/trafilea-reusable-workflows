@@ -1,0 +1,130 @@
+name: Deploy using Terragrunt
+
+on:
+  workflow_call:
+    inputs:
+      APP_NAME:
+        required: true
+        type: string
+      AWS_REGION:
+        required: false
+        default: "us-east-1"
+        type: string
+      VERSION:
+        required: true
+        type: string
+      ECR_REPO_NAME:
+        required: false
+        type: string
+        default: ${{ inputs.APP_NAME }}
+      ENV_ACCOUNT_ID:
+        required: true
+        type: string
+      DEPLOY_TYPE:
+        required: false
+        default: "s3" # docker or s3
+        type: string
+      AWS_S3_BUCKET_BUILDS:
+        required: false
+        default: "traf-core-builds"
+        type: string
+      ENV_FILE:
+        required: false
+        default: ""
+        type: string
+
+    secrets:
+      OIDC_IAM_ROLE:
+        required: true
+      GH_WORKFLOW_TOKEN:
+        required: true
+
+
+jobs:
+  check_org:
+    name: Check Caller
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check the calling organization
+        if: ${{ github.repository_owner != 'trafilea' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('This reusable workflow can only be used by Trafilea.')
+
+  deploy:
+    needs: check_org
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION}}
+      DD_API_KEY: ${{ secrets.TE_DD_API_KEY }}
+      DD_APP_KEY: ${{ secrets.TE_DD_APP_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - run: |
+          git config --local --remove-section http."https://github.com/"
+          git config --global url."https://foo:${{ secrets.GH_WORKFLOW_TOKEN }}@github.com/trafilea".insteadOf "https://github.com/trafilea"
+
+      - name: Configure AWS Credentials
+        id: oidc
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE }}
+          aws-region: "${{ inputs.AWS_REGION }}"
+          output-credentials: true
+
+      - name: Assume Role in ENV Account
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: "${{ inputs.AWS_REGION }}"
+          aws-access-key-id: ${{ steps.oidc.outputs.aws-access-key-id }}
+          aws-secret-access-key: ${{ steps.oidc.outputs.aws-secret-access-key }}
+          aws-session-token: ${{ steps.oidc.outputs.aws-session-token }}
+          role-to-assume: arn:aws:iam::${{ inputs.ENV_ACCOUNT_ID }}:role/terraform-admin-role
+
+
+      - name: Update Code from Docker Image
+        if: ${{ inputs.DEPLOY_TYPE == 'docker' }}
+        run: |
+          aws lambda update-function-code --function-name ${{ inputs.APP_NAME }} --image-uri 762869752790.dkr.ecr.us-east-1.amazonaws.com/${{ inputs.ECR_REPO_NAME }}:${{ inputs.DOCKER_IMAGE_TAG }}
+
+      - name: Update Code from S3
+        if: ${{ inputs.DEPLOY_TYPE == 's3' }}
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ inputs.APP_NAME }} \
+            --s3-bucket ${{ inputs.AWS_S3_BUCKET_BUILDS }} \
+            --s3-key ${{ inputs.APP_NAME }}/${{ inputs.VERSION }}.zip
+
+
+      - name: Wait for Code Update to Complete
+        run: |
+          aws lambda wait function-updated --function-name ${{ inputs.APP_NAME }}
+
+      - name: Update Lambda Environment Variables
+        run: |
+          # Read current environment variables
+          current_env=$(aws lambda get-function-configuration --function-name ${{ inputs.APP_NAME }} --query 'Environment.Variables' --output json)
+          
+          # Initialize env_json variable
+          env_json="{}"
+          
+          # Read .env file and convert to JSON format if ENV_FILE is provided
+          if [ -n "${{ inputs.ENV_FILE }}" ]; then
+            env_json=$(cat ${{ inputs.ENV_FILE }} | sed 's/^/"/;s/=/":"/;s/$/"/' | sed ':a;N;$!ba;s/\n/,/g' | sed 's/^/{/;s/$/}/')
+          fi
+          
+          # Merge current env vars with .env vars and add version variables
+          updated_env=$(echo $current_env | jq --arg APP_VERSION "${{ inputs.VERSION }}" --arg DD_VERSION "${{ inputs.VERSION }}" --argjson env "$env_json" '. + $env + {APP_VERSION: $APP_VERSION, DD_VERSION: $DD_VERSION}')
+
+          aws lambda update-function-configuration \
+            --function-name ${{ inputs.APP_NAME }} \
+            --environment "{ \"Variables\": $updated_env }"

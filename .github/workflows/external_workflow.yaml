@@ -1,0 +1,73 @@
+# repo-x/.github/workflows/call-external-workflow.yml
+name: Call External Workflow and Wait
+
+on:
+  workflow_call:
+    inputs:
+      repo:
+        required: true
+        type: string
+      owner:
+        required: true
+        type: string
+      workflow_id:
+        required: true
+        type: string
+      ref:
+        required: false
+        type: string
+        default: main
+    secrets:
+      GH_WORKFLOW_TOKEN:
+        required: true
+
+jobs:
+  call-and-wait:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger external workflow_dispatch
+        id: dispatch
+        run: |
+          curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GH_WORKFLOW_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ inputs.owner }}/${{ inputs.repo }}/actions/workflows/${{ inputs.workflow_id }}/dispatches \
+            -d "{\"ref\":\"${{ inputs.ref }}\"}"
+
+      - name: Wait for workflow run to start
+        id: get-run-id
+        run: |
+          echo "Waiting for workflow run to start..."
+          for i in {1..10}; do
+            sleep 5
+            RUNS=$(curl -s -H "Authorization: token ${{ secrets.GH_WORKFLOW_TOKEN }}" \
+              https://api.github.com/repos/${{ inputs.owner }}/${{ inputs.repo }}/actions/workflows/${{ inputs.workflow_id }}/runs?branch=${{ inputs.ref }}&event=workflow_dispatch)
+            RUN_ID=$(echo "$RUNS" | jq '.workflow_runs[0].id')
+            STATUS=$(echo "$RUNS" | jq -r '.workflow_runs[0].status')
+            if [[ "$STATUS" != "completed" ]]; then
+              echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+              break
+            fi
+          done
+
+      - name: Poll run status
+        run: |
+          echo "Polling for run ${{ steps.get-run-id.outputs.run_id }}..."
+          for i in {1..60}; do
+            sleep 10
+            RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GH_WORKFLOW_TOKEN }}" \
+              https://api.github.com/repos/${{ inputs.owner }}/${{ inputs.repo }}/actions/runs/${{ steps.get-run-id.outputs.run_id }})
+            STATUS=$(echo "$RESPONSE" | jq -r '.status')
+            CONCLUSION=$(echo "$RESPONSE" | jq -r '.conclusion')
+            echo "Status: $STATUS | Conclusion: $CONCLUSION"
+            if [[ "$STATUS" == "completed" ]]; then
+              if [[ "$CONCLUSION" == "success" ]]; then
+                exit 0
+              else
+                echo "Workflow failed"
+                exit 1
+              fi
+            fi
+          done
+          echo "Timeout waiting for workflow to finish"
+          exit 1
