@@ -1,0 +1,86 @@
+name: Application Test
+
+on:
+  workflow_call:
+    inputs:
+      NODE_VERSION:
+        required: false
+        type: string
+        default: ''
+      GO_VERSION:
+        required: false
+        type: string
+        default: ''
+      DATADOG_TEAM:
+        required: true
+        type: string
+      DATADOG_SERVICE:
+        required: true
+        type: string
+
+    
+    secrets:
+      GH_WORKFLOW_TOKEN:
+        required: true
+      TE_DD_API_KEY:
+        required: true
+      TE_DD_APP_KEY:
+        required: false
+
+jobs:
+  datadog_ci:
+    name: Datadog CI Configuration
+    runs-on: ubuntu-latest
+    env:
+      DATADOG_SITE: datadoghq.com
+      DATADOG_API_KEY: ${{ secrets.TE_DD_API_KEY }}
+      DD_TAGS: team:${{ inputs.DATADOG_TEAM }},service:${{ inputs.DATADOG_SERVICE }}
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Install datadog-ci
+        run: |
+          curl -L --fail "https://github.com/DataDog/datadog-ci/releases/latest/download/datadog-ci_linux-x64" --output "/usr/local/bin/datadog-ci"
+          chmod +x /usr/local/bin/datadog-ci
+
+      - name: Send Tags and Metadata to Datadog
+        run: |
+          datadog-ci tag --level pipeline
+          datadog-ci git-metadata upload
+
+  app_test:
+    name: Tests
+    runs-on: ubuntu-latest
+    env:
+      
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Set up Go
+        if: ${{ inputs.GO_VERSION != '' }}
+        uses: actions/setup-go@@v5
+        with:
+          go-version: ${{ inputs.GO_VERSION }}
+
+      - name: Setup Node
+        if: ${{ inputs.NODE_VERSION != '' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.NODE_VERSION }}
+
+      - name: Run Tests
+        run: |
+          make test
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

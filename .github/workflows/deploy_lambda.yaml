@@ -10,12 +10,8 @@ on:
         required: false
         default: "us-east-1"
         type: string
-      DOCKER_IMAGE_TAG:
-        required: false
-        type: string
-      CLUSTER_NAME:
-        required: false
-        default: "traf-engine-cluster"
+      VERSION:
+        required: true
         type: string
       ECR_REPO_NAME:
         required: false
@@ -24,16 +20,25 @@ on:
       ENV_ACCOUNT_ID:
         required: true
         type: string
+      DEPLOY_TYPE:
+        required: false
+        default: "s3" # docker or s3
+        type: string
+      AWS_S3_BUCKET_BUILDS:
+        required: false
+        default: "traf-core-builds"
+        type: string
+      ENV_FILE:
+        required: false
+        default: ""
+        type: string
 
     secrets:
       OIDC_IAM_ROLE:
         required: true
       GH_WORKFLOW_TOKEN:
         required: true
-      TE_DD_API_KEY:
-        required: true
-      TE_DD_APP_KEY:
-        required: false
+
 
 jobs:
   check_org:
@@ -84,25 +89,42 @@ jobs:
           aws-secret-access-key: ${{ steps.oidc.outputs.aws-secret-access-key }}
           aws-session-token: ${{ steps.oidc.outputs.aws-session-token }}
           role-to-assume: arn:aws:iam::${{ inputs.ENV_ACCOUNT_ID }}:role/terraform-admin-role
-      
-      - name: Download Task Definition
-        id: download-task-def
-        run: |
-          aws ecs describe-task-definition --task-definition ${{ inputs.APP_NAME }}-task-def --query taskDefinition > task-definition.json
-      
-      - name: Replace Image Tag in Environment variables
-        env:
-          NEW_TAG: ${{ inputs.DOCKER_IMAGE_TAG }}
-          PROYECTO: ${{ inputs.ECR_REPO_NAME }}
-        run: |
-          export OLD_TAG=$(jq -r '.containerDefinitions[0] | select(.image | contains("'"$PROYECTO"'")) | .image' task-definition.json | sed 's/.*://')
-          jq -r '.' task-definition.json | sed "s/$OLD_TAG/$NEW_TAG/g" > temp_archivo.json && mv temp_archivo.json task-definition.json
 
-      - name: Deploy Amazon ECS Task Definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: task-definition.json
-          service: ${{ inputs.APP_NAME }}-service
-          cluster: ${{ inputs.CLUSTER_NAME }}
-          wait-for-service-stability: false
-      
+
+      - name: Update Code from Docker Image
+        if: ${{ inputs.DEPLOY_TYPE == 'docker' }}
+        run: |
+          aws lambda update-function-code --function-name ${{ inputs.APP_NAME }} --image-uri 762869752790.dkr.ecr.us-east-1.amazonaws.com/${{ inputs.ECR_REPO_NAME }}:${{ inputs.DOCKER_IMAGE_TAG }}
+
+      - name: Update Code from S3
+        if: ${{ inputs.DEPLOY_TYPE == 's3' }}
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ inputs.APP_NAME }} \
+            --s3-bucket ${{ inputs.AWS_S3_BUCKET_BUILDS }} \
+            --s3-key ${{ inputs.APP_NAME }}/${{ inputs.VERSION }}.zip
+
+
+      - name: Wait for Code Update to Complete
+        run: |
+          aws lambda wait function-updated --function-name ${{ inputs.APP_NAME }}
+
+      - name: Update Lambda Environment Variables
+        run: |
+          # Read current environment variables
+          current_env=$(aws lambda get-function-configuration --function-name ${{ inputs.APP_NAME }} --query 'Environment.Variables' --output json)
+          
+          # Initialize env_json variable
+          env_json="{}"
+          
+          # Read .env file and convert to JSON format if ENV_FILE is provided
+          if [ -n "${{ inputs.ENV_FILE }}" ]; then
+            env_json=$(cat ${{ inputs.ENV_FILE }} | sed 's/^/"/;s/=/":"/;s/$/"/' | sed ':a;N;$!ba;s/\n/,/g' | sed 's/^/{/;s/$/}/')
+          fi
+          
+          # Merge current env vars with .env vars and add version variables
+          updated_env=$(echo $current_env | jq --arg APP_VERSION "${{ inputs.VERSION }}" --arg DD_VERSION "${{ inputs.VERSION }}" --argjson env "$env_json" '. + $env + {APP_VERSION: $APP_VERSION, DD_VERSION: $DD_VERSION}')
+
+          aws lambda update-function-configuration \
+            --function-name ${{ inputs.APP_NAME }} \
+            --environment "{ \"Variables\": $updated_env }"

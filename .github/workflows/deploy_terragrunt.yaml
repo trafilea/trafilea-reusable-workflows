@@ -23,6 +23,10 @@ on:
         required: false
         default: terraform
         type: string
+      ABSOLUTE_INFRA_PATH:
+        required: false
+        default: ""
+        type: string        
       TERRAFORM_VERSION:
         required: false
         type: string
@@ -34,6 +38,8 @@ on:
 
     secrets:
       GH_WORKFLOW_TOKEN:
+        required: true
+      OIDC_IAM_ROLE:
         required: true
       TE_DD_API_KEY:
         required: true
@@ -104,14 +110,16 @@ jobs:
         uses: autero1/action-terragrunt@v3.0.2
         with:
           terragrunt-version: ${{ inputs.TERRAGRUNT_VERSION }}
-
-      - name: Terragrunt Plan
-        run: terragrunt run-all plan -lock=false --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
-        working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
-
+          
       - name: Terragrunt Apply
+        if: ${{ inputs.ABSOLUTE_INFRA_PATH == ''}}
         run: terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color
         working-directory: ${{ github.workspace }}/${{ inputs.INFRA_PATH }}/environment/${{ inputs.ENVIRONMENT }}/
+
+      - name: Terragrunt Apply (Abs path)
+        if: ${{ inputs.ABSOLUTE_INFRA_PATH != ''}}
+        run: terragrunt run-all apply --terragrunt-non-interactive --terragrunt-include-external-dependencies -no-color
+        working-directory: ${{ github.workspace }}/${{ inputs.ABSOLUTE_INFRA_PATH }}/
 
       - name: Datadog
         uses: masci/datadog@v1

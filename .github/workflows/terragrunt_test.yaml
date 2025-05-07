@@ -22,8 +22,18 @@ on:
         required: false
         default: terraform
         type: string
+      TERRAFORM_VERSION:
+        required: false
+        type: string
+        default: 1.2.9
+      TERRAGRUNT_VERSION:
+        required: false
+        type: string
+        default: 0.36.12          
 
     secrets:
+      OIDC_IAM_ROLE:
+        required: true
       GH_WORKFLOW_TOKEN:
         required: true
       DB_PASSWORD:
@@ -59,6 +69,8 @@ jobs:
       ENV: ${{ inputs.ENVIRONMENT }}
       DD_API_KEY: ${{ secrets.TE_DD_API_KEY }}
       DD_APP_KEY: ${{ secrets.TE_DD_APP_KEY }}
+      TERRAFORM_VERSION: ${{ inputs.TERRAFORM_VERSION }}
+      TERRAGRUNT_VERSION: ${{ inputs.TERRAGRUNT_VERSION }}
 
     steps:
       - name: Checkout code
@@ -80,12 +92,12 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
-          terraform_version: 1.2.9
+          terraform_version: ${{ inputs.TERRAFORM_VERSION }}
 
       - name: Install Terragrunt
         uses: peter-murray/terragrunt-github-action@v1.0.0
         with:
-          terragrunt_version: 0.36.12
+          terragrunt_version: ${{ inputs.TERRAGRUNT_VERSION }}
 
       - name: Terragrunt Plan
         run: terragrunt run-all plan -lock=false --terragrunt-non-interactive --terragrunt-source-update --terragrunt-include-external-dependencies -no-color
